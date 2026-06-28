@@ -3,397 +3,579 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TixQueue Ticketing</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    :root {
-      --bg: #020b1f;
-      --panel: #071634;
-      --panel-alt: #0b2147;
-      --text: #e8f1ff;
-      --muted: #9ab0cf;
-      --teal: #11d3a7;
-      --teal-dark: #0aa688;
-      --line: rgba(52, 92, 155, 0.38);
-      --chip: #0d2c55;
-      --rose: #ff4a75;
-    }
+  <title>TixQueue Minimal</title>
+    <style>
+      :root {
+        --bg: #f5f7fa;
+        --surface: #ffffff;
+        --line: #d7dee8;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --brand: #0f766e;
+        --brand-soft: #ecfdf5;
+        --danger: #b91c1c;
+      }
 
-    body {
-      font-family: "Manrope", sans-serif;
-      background: radial-gradient(circle at 20% -20%, #133d7d 0%, #041027 40%, var(--bg) 100%);
-      color: var(--text);
-      min-height: 100vh;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    .topbar {
-      background: rgba(4, 15, 38, 0.88);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(6px);
-    }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
 
-    .brand-badge {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      color: #052537;
-      background: linear-gradient(140deg, #21f0c2, #0eb8f2);
-      font-weight: 800;
-    }
+      .container {
+        width: min(980px, 92vw);
+        margin: 0 auto;
+      }
 
-    .brand-title {
-      margin: 0;
-      line-height: 1.1;
-      font-size: 1.35rem;
-      font-weight: 800;
-    }
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
 
-    .brand-sub {
-      margin: 0;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
+      .topbar-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
 
-    .toolbar-chip {
-      background: #081b3d;
-      border: 1px solid var(--line);
-      color: #c8daf7;
-      border-radius: 12px;
-      font-size: 0.84rem;
-      padding: 0.52rem 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
+      .brand {
+        margin: 0;
+        font-size: 1.15rem;
+        cursor: pointer;
+      }
 
-    .toolbar-chip.active {
-      background: linear-gradient(120deg, #0fcfa5, #1ec7ff);
-      color: #072332;
-      border-color: transparent;
-    }
+      .nav {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
 
-    .hero {
-      background: linear-gradient(120deg, #0a1d44 0%, #0a2f5b 40%, #0d4d64 100%);
-      border: 1px solid rgba(64, 122, 189, 0.4);
-      border-radius: 1.4rem;
-      padding: 2.5rem;
-      box-shadow: 0 26px 50px rgba(3, 11, 30, 0.55);
-    }
+      button {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        cursor: pointer;
+      }
 
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      background: rgba(17, 211, 167, 0.18);
-      color: #80ffd6;
-      border: 1px solid rgba(29, 255, 197, 0.35);
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 0.86rem;
-      padding: 0.35rem 0.75rem;
-      margin-bottom: 1rem;
-    }
+      button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #ffffff;
+      }
 
-    .hero h1 {
-      font-size: clamp(2rem, 5vw, 4rem);
-      line-height: 1.05;
-      margin-bottom: 1rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
+      main {
+        padding: 1.1rem 0 2.2rem;
+      }
 
-    .hero p {
-      color: #c3d9f5;
-      max-width: 58ch;
-      font-size: 1.08rem;
-    }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
 
-    .search-wrap {
-      max-width: 560px;
-      border: 1px solid rgba(72, 115, 182, 0.45);
-      background: rgba(2, 10, 27, 0.78);
-      border-radius: 14px;
-      padding: 0.3rem;
-      margin-top: 1.4rem;
-      display: flex;
-      gap: 0.4rem;
-    }
+      .view-container {
+        display: none;
+      }
 
-    .search-wrap input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      color: var(--text);
-      padding: 0.62rem 0.8rem;
-      outline: none;
-    }
+      .view-container.active-view {
+        display: block;
+      }
 
-    .search-wrap button {
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(120deg, var(--teal), #16e7bf);
-      color: #032437;
-      font-weight: 800;
-      padding: 0.58rem 1.5rem;
-    }
+      .search-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.75rem;
+      }
 
-    .ticket-card {
-      position: relative;
-      overflow: hidden;
-      border-radius: 1rem;
-      border: 1px solid rgba(64, 111, 178, 0.45);
-      background: var(--panel);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      height: 100%;
-    }
+      .search-row input,
+      .form-row input {
+        flex: 1;
+        min-width: 220px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.5rem 0.6rem;
+        background: #fff;
+      }
 
-    .ticket-card img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-    }
+      .catalog {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 0.8rem;
+        margin-top: 0.85rem;
+      }
 
-    .ticket-tag {
-      position: absolute;
-      top: 0.75rem;
-      left: 0.75rem;
-      background: rgba(4, 15, 38, 0.82);
-      color: #b9cdf0;
-      border: 1px solid rgba(111, 145, 196, 0.38);
-      font-size: 0.74rem;
-      font-weight: 700;
-      padding: 0.18rem 0.55rem;
-      border-radius: 999px;
-      z-index: 2;
-    }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+      }
 
-    .age-badge {
-      position: absolute;
-      top: 0.75rem;
-      right: 0.75rem;
-      font-size: 0.74rem;
-      font-weight: 800;
-      padding: 0.18rem 0.55rem;
-      border-radius: 999px;
-      z-index: 2;
-    }
+      .card img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        background: #f1f5f9;
+      }
 
-    .age-all {
-      background: rgba(17, 211, 167, 0.2);
-      color: var(--teal);
-      border: 1px solid var(--teal);
-    }
+      .card-body {
+        padding: 0.7rem;
+        display: grid;
+        gap: 0.35rem;
+      }
 
-    .age-restricted {
-      background: rgba(255, 74, 117, 0.2);
-      color: var(--rose);
-      border: 1px solid var(--rose);
-    }
+      .muted {
+        color: var(--muted);
+        margin: 0;
+        font-size: 0.92rem;
+      }
 
-    .stock {
-      background: linear-gradient(110deg, #0bcda2, #17dcff);
-      color: #03263a;
-      font-size: 0.8rem;
-      font-weight: 800;
-      padding: 0.28rem 0.65rem;
-      border-radius: 8px;
-    }
+      .badge {
+        background: var(--brand-soft);
+        color: var(--brand);
+        border: 1px solid #b7e4d9;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        padding: 0.15rem 0.5rem;
+        width: fit-content;
+      }
 
-    .custom-input {
-      background: rgba(2, 10, 27, 0.6);
-      border: 1px solid var(--line);
-      color: var(--text);
-      padding: 0.75rem 1rem;
-      border-radius: 12px;
-    }
+      .form-grid {
+        display: grid;
+        gap: 0.7rem;
+        max-width: 520px;
+      }
 
-    .custom-input:focus {
-      background: rgba(2, 10, 27, 0.9);
-      border-color: var(--teal);
-      color: var(--text);
-      box-shadow: none;
-    }
+      .form-row {
+        display: grid;
+        gap: 0.3rem;
+      }
 
-    .view-container {
-      display: none;
-    }
+      .status {
+        margin-top: 0.6rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
 
-    .view-container.active-view {
-      display: block;
-    }
+      .danger {
+        color: var(--danger);
+      }
 
-    .queue-circle {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      border: 8px solid var(--line);
-      border-top-color: var(--teal);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto;
-      animation: spin 2s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
-</head>
-<body>
-
-  <header class="topbar py-3">
-    <div class="container d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center gap-3" style="cursor: pointer;" onclick="switchView('landing')">
-        <div class="brand-badge">TX</div>
-        <div>
-          <h1 class="brand-title">TixQueue</h1>
-          <p class="brand-sub">Premium Gate</p>
+      ul {
+        margin: 0;
+        padding-left: 1.1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container topbar-row">
+        <h1 class="brand" onclick="switchView('landing')">TixQueue</h1>
+        <div class="nav">
+          <button onclick="switchView('landing')">Home</button>
+          <button onclick="switchView('queue')">Queue</button>
+          <button onclick="switchView('transactions')">Transactions</button>
+          <button onclick="switchView('profile')">Profile</button>
         </div>
+        <div class="nav" id="navAuthControls"></div>
       </div>
-      <div class="d-flex gap-2" id="navAuthControls"></div>
-    </div>
-  </header>
+    </header>
 
-  <main class="container py-4">
+    <main class="container">
+      <div id="view-landing" class="view-container active-view">
+        <section class="panel">
+          <p class="badge" id="heroTag">System Ready</p>
+          <h2 id="heroTitle">Ticket Catalog</h2>
+          <p class="muted" id="heroDescription">Simple UI for core ticket functions.</p>
+          <form class="search-row" onsubmit="searchCatalog(event)">
+            <input type="search" id="searchInput" placeholder="Search events" />
+            <button class="primary" type="submit">Search</button>
+          </form>
+        </section>
 
-    <div id="view-landing" class="view-container active-view">
-      <section class="hero mb-4">
-        <span class="hero-tag"><i data-lucide="shield-check"></i> Connected System Ready</span>
-        <h1>Secure Ticket Allocation</h1>
-        <p>Sistem antrean pembelian tiket real-time terintegrasi dengan verifikasi identitas berlapis untuk menghindari botting skala besar.</p>
-        <form class="search-wrap" onsubmit="event.preventDefault();">
-          <input type="search" placeholder="Cari event musik, konser, festival..." />
-          <button type="submit">Cari</button>
-        </form>
-      </section>
-
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="fs-3 fw-800 m-0">Katalog Konser Teraktif</h2>
-        <div class="d-flex gap-2">
-          <span class="toolbar-chip active">Semua</span>
-          <span class="toolbar-chip">Jakarta</span>
-          <span class="toolbar-chip">Surabaya</span>
-        </div>
+        <section class="panel">
+          <h3 style="margin-top: 0;">Catalog</h3>
+          <div id="catalogContainer" class="catalog"></div>
+        </section>
       </div>
-      <div id="catalogContainer" class="row g-4"></div>
-    </div>
 
-    <div id="view-login" class="view-container">
-      <div class="row justify-content-center">
-        <div class="col-md-5">
-          <div class="p-4 rounded-4" style="background: var(--panel); border: 1px solid var(--line);">
-            <h3 class="fw-800 mb-4 text-center">Masuk Akun</h3>
-            <form onsubmit="handleAuthLogin(event)">
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">Email</label>
-                <input type="email" id="inputLoginEmail" class="form-control custom-input" required />
-              </div>
-              <div class="mb-4">
-                <label class="form-label text-muted fs-7">Password</label>
-                <input type="password" id="inputLoginPassword" class="form-control custom-input" required />
-              </div>
-              <button type="submit" class="btn w-100 fw-700 py-2.5" style="background: var(--teal); color: #020b1f;">Masuk</button>
-            </form>
-          </div>
-        </div>
+      <div id="view-login" class="view-container">
+        <section class="panel">
+          <h2>Login</h2>
+          <form class="form-grid" onsubmit="handleAuthLogin(event)">
+            <label class="form-row">
+              Email
+              <input type="email" id="inputLoginEmail" required />
+            </label>
+            <label class="form-row">
+              Password
+              <input type="password" id="inputLoginPassword" required />
+            </label>
+            <button class="primary" type="submit">Login</button>
+          </form>
+        </section>
       </div>
-    </div>
 
-    <div id="view-register" class="view-container">
-      <div class="row justify-content-center">
-        <div class="col-md-6">
-          <div class="p-4 rounded-4" style="background: var(--panel); border: 1px solid var(--line);">
-            <h3 class="fw-800 mb-4 text-center">Registrasi Akun</h3>
-            <form onsubmit="handleAuthRegister(event)">
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">NIK KTP (16 Digit)</label>
-                <input type="text" id="inputRegNik" class="form-control custom-input" minlength="16" maxlength="16" required />
-              </div>
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">Tanggal Lahir</label>
-                <input type="date" id="inputRegBirth" class="form-control custom-input" required />
-              </div>
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">Email</label>
-                <input type="email" id="inputRegEmail" class="form-control custom-input" required />
-              </div>
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">Password</label>
-                <input type="password" id="inputRegPassword" class="form-control custom-input" required />
-              </div>
-              <div class="mb-4">
-                <label class="form-label text-muted fs-7">Konfirmasi Password</label>
-                <input type="password" id="inputRegConfirm" class="form-control custom-input" required />
-              </div>
-              <button type="submit" class="btn w-100 fw-700 py-2.5" style="background: var(--teal); color: #020b1f;">Daftar</button>
-            </form>
-          </div>
-        </div>
+      <div id="view-register" class="view-container">
+        <section class="panel">
+          <h2>Register</h2>
+          <form class="form-grid" onsubmit="handleAuthRegister(event)">
+            <label class="form-row">
+              NIK (16 digits)
+              <input type="text" id="inputRegNik" minlength="16" maxlength="16" required />
+            </label>
+            <label class="form-row">
+              Birth date
+              <input type="date" id="inputRegBirth" required />
+            </label>
+            <label class="form-row">
+              Email
+              <input type="email" id="inputRegEmail" required />
+            </label>
+            <label class="form-row">
+              Password
+              <input type="password" id="inputRegPassword" required />
+            </label>
+            <label class="form-row">
+              Confirm password
+              <input type="password" id="inputRegConfirm" required />
+            </label>
+            <button class="primary" type="submit">Register</button>
+          </form>
+        </section>
       </div>
-    </div>
 
-    <div id="view-profile" class="view-container">
-      <div class="row justify-content-center">
-        <div class="col-md-6">
-          <div class="p-4 rounded-4" style="background: var(--panel); border: 1px solid var(--line);">
-            <h3 class="fw-800 mb-4">Profil Saya</h3>
-            <form onsubmit="handleProfileUpdate(event)">
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">Email (Read-Only)</label>
-                <input type="text" id="profEmail" class="form-control custom-input" readonly disabled />
-              </div>
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">NIK KTP (Read-Only)</label>
-                <input type="text" id="profNik" class="form-control custom-input" readonly disabled />
-              </div>
-              <div class="mb-3">
-                <label class="form-label text-muted fs-7">Tanggal Lahir</label>
-                <input type="date" id="profBirth" class="form-control custom-input" required />
-              </div>
-              <div class="mb-4">
-                <label class="form-label text-muted fs-7">Password Baru (Kosongkan jika tidak diubah)</label>
-                <input type="password" id="profPassword" class="form-control custom-input" />
-              </div>
-              <button type="submit" class="btn w-100 fw-700 py-2.5" style="background: var(--teal); color: #020b1f;">Update Profil</button>
-            </form>
-          </div>
-        </div>
+      <div id="view-profile" class="view-container">
+        <section class="panel">
+          <h2>Profile</h2>
+          <form class="form-grid" onsubmit="handleProfileUpdate(event)">
+            <label class="form-row">
+              Email
+              <input type="text" id="profEmail" readonly />
+            </label>
+            <label class="form-row">
+              NIK
+              <input type="text" id="profNik" readonly />
+            </label>
+            <label class="form-row">
+              Birth date
+              <input type="date" id="profBirth" required />
+            </label>
+            <label class="form-row">
+              New password (optional)
+              <input type="password" id="profPassword" />
+            </label>
+            <button class="primary" type="submit">Save profile</button>
+          </form>
+        </section>
       </div>
-    </div>
 
-    <div id="view-queue" class="view-container">
-      <div class="row justify-content-center text-center py-5">
-        <div class="col-md-5 p-4 rounded-4" style="background: var(--panel); border: 1px solid var(--line);">
-          <div class="queue-circle mb-4"></div>
-          <h3 class="fw-800">Menunggu Antrean Virtual</h3>
-          <p class="text-muted small">Jangan memuat ulang halaman. Tiket Anda sedang dialokasikan sementara oleh server.</p>
-          <div class="p-3 rounded-3 mt-4 text-start" style="background: var(--bg); border: 1px solid var(--line);">
-            <div class="d-flex justify-content-between mb-2 fs-7"><span class="text-muted">Nomor Posisi:</span><span id="qNo" class="fw-700"></span></div>
-            <div class="d-flex justify-content-between mb-2 fs-7"><span class="text-muted">Total Antrean:</span><span id="qTotal" class="fw-700"></span></div>
-            <div class="d-flex justify-content-between fs-7"><span class="text-muted">Estimasi Waktu:</span><span id="qTime" class="text-info fw-700"></span></div>
-          </div>
-        </div>
+      <div id="view-queue" class="view-container">
+        <section class="panel">
+          <h2>Queue Status</h2>
+          <p class="muted">Simple queue simulation for frontend flow.</p>
+          <button class="primary" onclick="simulateQueue()">Refresh Queue</button>
+          <div class="status">Queue No: <strong id="qNo">-</strong></div>
+          <div class="status">Total Queue: <strong id="qTotal">-</strong></div>
+          <div class="status">Estimated Time: <strong id="qTime">-</strong></div>
+        </section>
       </div>
-    </div>
 
-    <div id="view-transactions" class="view-container">
-      <h3 class="fw-800 mb-4">Riwayat Log Transaksi</h3>
-      <div id="txListContainer" class="d-flex flex-column gap-3"></div>
-    </div>
+      <div id="view-transactions" class="view-container">
+        <section class="panel">
+          <h2>Transactions</h2>
+          <div id="txListContainer"></div>
+        </section>
+      </div>
 
-    <div id="view-purchase" class="view-container">
-      <div class="row g-4" id="purchaseDetailsContainer"></div>
-    </div>
+      <div id="view-purchase" class="view-container">
+        <section class="panel">
+          <h2>Purchase Details</h2>
+          <div id="purchaseDetailsContainer"></div>
+        </section>
+      </div>
+    </main>
 
-  </main>
+    <script>
+      const API_BASE = "http://localhost:3010/api";
 
-</body>
-</html>
+      let appState = {
+        user: null,
+        catalog: [],
+        filteredCatalog: []
+      };
+
+      function switchView(viewName) {
+        document.querySelectorAll(".view-container").forEach((el) => {
+          el.classList.remove("active-view");
+        });
+        const target = document.getElementById(`view-${viewName}`);
+        if (target) {
+          target.classList.add("active-view");
+        }
+      }
+
+      function renderAuthControls() {
+        const wrapper = document.getElementById("navAuthControls");
+        if (!wrapper) {
+          return;
+        }
+
+        if (appState.user) {
+          wrapper.innerHTML = `
+            <button onclick="switchView('profile')">${appState.user.email}</button>
+            <button onclick="logout()">Logout</button>
+          `;
+        } else {
+          wrapper.innerHTML = `
+            <button onclick="switchView('login')">Login</button>
+            <button class="primary" onclick="switchView('register')">Register</button>
+          `;
+        }
+      }
+
+      function renderCatalog() {
+        const container = document.getElementById("catalogContainer");
+        if (!container) {
+          return;
+        }
+
+        if (!appState.filteredCatalog.length) {
+          container.innerHTML = `<p class="muted">No events found.</p>`;
+          return;
+        }
+
+        container.innerHTML = appState.filteredCatalog
+          .map(
+            (item, index) => `
+              <article class="card">
+                <img src="${item.image}" alt="${item.alt || item.genre}" />
+                <div class="card-body">
+                  <strong>${item.genre || `Event ${index + 1}`}</strong>
+                  <p class="muted">Stock: ${item.stock ?? 0}</p>
+                  <button onclick="startPurchase('${(item.genre || `Event-${index + 1}`).replace(/'/g, "")}', ${item.stock ?? 0})">Buy</button>
+                </div>
+              </article>
+            `
+          )
+          .join("");
+      }
+
+      function searchCatalog(event) {
+        event.preventDefault();
+        const keyword = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+
+        if (!keyword) {
+          appState.filteredCatalog = [...appState.catalog];
+        } else {
+          appState.filteredCatalog = appState.catalog.filter((item) => {
+            return `${item.genre || ""} ${item.alt || ""}`.toLowerCase().includes(keyword);
+          });
+        }
+
+        renderCatalog();
+      }
+
+      function fillProfileForm() {
+        const user = appState.user;
+        if (!user) {
+          return;
+        }
+
+        document.getElementById("profEmail").value = user.email || "";
+        document.getElementById("profNik").value = user.nik || "";
+        document.getElementById("profBirth").value = user.birth || "";
+      }
+
+      function handleAuthLogin(event) {
+        event.preventDefault();
+        const email = document.getElementById("inputLoginEmail").value.trim();
+        const password = document.getElementById("inputLoginPassword").value;
+
+        if (!email || !password) {
+          alert("Email and password are required.");
+          return;
+        }
+
+        const stored = JSON.parse(localStorage.getItem("tixqueue-user") || "null");
+        if (!stored || stored.email !== email) {
+          alert("User not found. Please register first.");
+          return;
+        }
+
+        appState.user = stored;
+        renderAuthControls();
+        fillProfileForm();
+        renderTransactions();
+        switchView("landing");
+      }
+
+      function handleAuthRegister(event) {
+        event.preventDefault();
+
+        const nik = document.getElementById("inputRegNik").value.trim();
+        const birth = document.getElementById("inputRegBirth").value;
+        const email = document.getElementById("inputRegEmail").value.trim();
+        const password = document.getElementById("inputRegPassword").value;
+        const confirm = document.getElementById("inputRegConfirm").value;
+
+        if (!/^\d{16}$/.test(nik)) {
+          alert("NIK must be exactly 16 digits.");
+          return;
+        }
+
+        if (password !== confirm) {
+          alert("Password confirmation does not match.");
+          return;
+        }
+
+        appState.user = { nik, birth, email, password };
+        localStorage.setItem("tixqueue-user", JSON.stringify(appState.user));
+        renderAuthControls();
+        fillProfileForm();
+        switchView("profile");
+      }
+
+      function handleProfileUpdate(event) {
+        event.preventDefault();
+
+        if (!appState.user) {
+          alert("Please login first.");
+          return;
+        }
+
+        const birth = document.getElementById("profBirth").value;
+        const newPassword = document.getElementById("profPassword").value;
+
+        appState.user.birth = birth;
+        if (newPassword.trim()) {
+          appState.user.password = newPassword;
+        }
+
+        localStorage.setItem("tixqueue-user", JSON.stringify(appState.user));
+        document.getElementById("profPassword").value = "";
+        alert("Profile updated.");
+      }
+
+      function logout() {
+        appState.user = null;
+        renderAuthControls();
+        switchView("landing");
+      }
+
+      function simulateQueue() {
+        const qNo = Math.floor(Math.random() * 180) + 1;
+        const qTotal = 200;
+        const waitMinutes = Math.ceil((qNo / qTotal) * 30);
+
+        document.getElementById("qNo").textContent = String(qNo);
+        document.getElementById("qTotal").textContent = String(qTotal);
+        document.getElementById("qTime").textContent = `${waitMinutes} minutes`;
+      }
+
+      function startPurchase(eventName, stock) {
+        const target = document.getElementById("purchaseDetailsContainer");
+        target.innerHTML = `
+          <p><strong>Event:</strong> ${eventName}</p>
+          <p><strong>Stock:</strong> ${stock}</p>
+          <button class="primary" onclick="confirmPurchase('${String(eventName).replace(/'/g, "")}')">Confirm Purchase</button>
+        `;
+        switchView("purchase");
+      }
+
+      function confirmPurchase(eventName) {
+        const key = "tixqueue-transactions";
+        const tx = JSON.parse(localStorage.getItem(key) || "[]");
+        tx.unshift({
+          event: eventName,
+          date: new Date().toLocaleString(),
+          status: "success"
+        });
+        localStorage.setItem(key, JSON.stringify(tx));
+        renderTransactions();
+        alert("Purchase recorded.");
+        switchView("transactions");
+      }
+
+      function renderTransactions() {
+        const list = JSON.parse(localStorage.getItem("tixqueue-transactions") || "[]");
+        const container = document.getElementById("txListContainer");
+
+        if (!list.length) {
+          container.innerHTML = `<p class="muted">No transactions yet.</p>`;
+          return;
+        }
+
+        container.innerHTML = `
+          <ul>
+            ${list
+              .map((tx) => `<li>${tx.date} - ${tx.event} - <strong>${tx.status}</strong></li>`)
+              .join("")}
+          </ul>
+        `;
+      }
+
+      async function loadHomepageData() {
+        const title = document.getElementById("heroTitle");
+        const tag = document.getElementById("heroTag");
+        const description = document.getElementById("heroDescription");
+        const searchInput = document.getElementById("searchInput");
+
+        try {
+          const response = await fetch(`${API_BASE}/homepage`);
+          if (!response.ok) {
+            throw new Error("Unable to load homepage data");
+          }
+
+          const data = await response.json();
+          title.textContent = data.hero?.title || "Ticket Catalog";
+          tag.textContent = data.hero?.tag || "System Ready";
+          description.textContent = data.hero?.description || "Simple UI for core ticket functions.";
+          searchInput.placeholder = data.hero?.searchPlaceholder || "Search events";
+
+          appState.catalog = Array.isArray(data.popular?.cards) ? data.popular.cards : [];
+          appState.filteredCatalog = [...appState.catalog];
+          renderCatalog();
+        } catch (error) {
+          title.textContent = "Ticket Catalog";
+          tag.textContent = "Offline Mode";
+          description.innerHTML = `<span class="danger">${error.message}. Start backend on port 3010.</span>`;
+          appState.catalog = [];
+          appState.filteredCatalog = [];
+          renderCatalog();
+        }
+      }
+
+      function initializeApp() {
+        const savedUser = JSON.parse(localStorage.getItem("tixqueue-user") || "null");
+        if (savedUser) {
+          appState.user = savedUser;
+        }
+
+        renderAuthControls();
+        fillProfileForm();
+        renderTransactions();
+        simulateQueue();
+        loadHomepageData();
+      }
+
+      initializeApp();
+    </script>
+  </body>
+  </html>

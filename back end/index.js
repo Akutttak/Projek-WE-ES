@@ -1,7 +1,8 @@
 const express = require("express");
+const connectDB = require("./config/config");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3010;
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -81,6 +82,17 @@ app.get("/", (req, res) => {
   res.json({ message: "Backend is running" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+async function startServer() {
+  try {
+    await connectDB();
+
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Server failed to start:", error.message);
+    process.exit(1);
+  }
+}
+
+startServer();
