@@ -3,6 +3,12 @@
 -- Target Database: PostgreSQL / MySQL Compatible (Standard ANSI SQL)
 -- =============================================================================
 
+-- Create a new database for the ticketing system. If it already exists, drop it first to ensure a clean slate.
+DROP DATABASE IF EXISTS ticketing_system;
+CREATE DATABASE ticketing_system;
+
+USE ticketing_system;
+
 -- DROP TABLES IF THEY EXIST TO ENSURE CLEAN FRESH RESET (ORDER MATTERS DUE TO FK CONSTRAINTS)
 DROP TABLE IF EXISTS transaction_items;
 DROP TABLE IF EXISTS transactions;
@@ -102,6 +108,22 @@ CREATE TABLE transaction_items (
         REFERENCES ticket_types(ticket_type_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- =============================================================================
+-- 5. MODUL SESSION & REMEMBER ME MANAGEMENT
+-- =============================================================================
+CREATE TABLE user_sessions (
+    session_id INT NOT NULL AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    token VARCHAR(64) NOT NULL,        -- Token unik (bisa menggunakan SHA-256 hash) yang disimpan di Cookie user
+    user_agent VARCHAR(255) NULL,      -- Menyimpan info browser/perangkat (opsional, untuk security log)
+    ip_address VARCHAR(45) NULL,       -- Menyimpan IP Address user (opsional)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,     -- Waktu kadaluarsa cookie (misal: +30 hari jika "Remember Me" dicentang)
+    PRIMARY KEY (session_id),
+    CONSTRAINT uq_session_token UNIQUE (token),
+    CONSTRAINT fk_sessions_user FOREIGN KEY (user_id) 
+        REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================================================
 -- MOCK DATA / SEEDERS FOR INITIAL TESTING (FORMALITAS & TESTING)
