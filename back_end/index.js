@@ -2,11 +2,15 @@ const express = require("express");
 const { connectDB } = require("./config/config");
 const models = require("./models/associations");
 const syncModels = require("./models/sync");
+const { users } = require("./routes");
+
 
 const app = express();
 const PORT = process.env.PORT || 3010;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -103,3 +107,5 @@ async function startServer() {
 }
 
 startServer();
+
+app.use("", users)
