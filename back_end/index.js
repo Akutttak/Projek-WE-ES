@@ -2,8 +2,7 @@ const express = require("express");
 const { connectDB } = require("./config/config");
 const models = require("./models/associations");
 const syncModels = require("./models/sync");
-const { users } = require("./routes");
-
+const { users, admin } = require("./routes");
 
 const app = express();
 const PORT = process.env.PORT || 3010;
@@ -108,4 +107,7 @@ async function startServer() {
 
 startServer();
 
-app.use("", users)
+app.use("", users);
+if (admin) {
+  app.use("", admin);
+}
