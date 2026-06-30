@@ -215,52 +215,6 @@
         </section>
       </div>
 
-      <div id="view-login" class="view-container">
-        <section class="panel">
-          <h2>Login</h2>
-          <form class="form-grid" onsubmit="handleAuthLogin(event)">
-            <label class="form-row">
-              Email
-              <input type="email" id="inputLoginEmail" required />
-            </label>
-            <label class="form-row">
-              Password
-              <input type="password" id="inputLoginPassword" required />
-            </label>
-            <button class="primary" type="submit">Login</button>
-          </form>
-        </section>
-      </div>
-
-      <div id="view-register" class="view-container">
-        <section class="panel">
-          <h2>Register</h2>
-          <form class="form-grid" onsubmit="handleAuthRegister(event)">
-            <label class="form-row">
-              NIK (16 digits)
-              <input type="text" id="inputRegNik" minlength="16" maxlength="16" required />
-            </label>
-            <label class="form-row">
-              Birth date
-              <input type="date" id="inputRegBirth" required />
-            </label>
-            <label class="form-row">
-              Email
-              <input type="email" id="inputRegEmail" required />
-            </label>
-            <label class="form-row">
-              Password
-              <input type="password" id="inputRegPassword" required />
-            </label>
-            <label class="form-row">
-              Confirm password
-              <input type="password" id="inputRegConfirm" required />
-            </label>
-            <button class="primary" type="submit">Register</button>
-          </form>
-        </section>
-      </div>
-
       <div id="view-profile" class="view-container">
         <section class="panel">
           <h2>Profile</h2>
@@ -317,9 +271,35 @@
 
       let appState = {
         user: null,
+        token: null,
         catalog: [],
         filteredCatalog: []
       };
+
+      function parseJwt(token) {
+        try {
+          const payload = token.split(".")[1];
+          const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+          const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+          return JSON.parse(atob(padded));
+        } catch (_error) {
+          return null;
+        }
+      }
+
+      function saveAuthSession(payload) {
+        appState.token = payload.token;
+        appState.user = payload.user;
+        localStorage.setItem("tixqueue-token", payload.token);
+        localStorage.setItem("tixqueue-user", JSON.stringify(payload.user));
+      }
+
+      function clearAuthSession() {
+        appState.token = null;
+        appState.user = null;
+        localStorage.removeItem("tixqueue-token");
+        localStorage.removeItem("tixqueue-user");
+      }
 
       function switchView(viewName) {
         document.querySelectorAll(".view-container").forEach((el) => {
@@ -339,13 +319,13 @@
 
         if (appState.user) {
           wrapper.innerHTML = `
-            <button onclick="switchView('profile')">${appState.user.email}</button>
+            <button onclick="switchView('profile')">${appState.user.email} (${appState.user.role || "user"})</button>
             <button onclick="logout()">Logout</button>
           `;
         } else {
           wrapper.innerHTML = `
-            <button onclick="switchView('login')">Login</button>
-            <button class="primary" onclick="switchView('register')">Register</button>
+            <button onclick="window.location.href='login.html'">Login</button>
+            <button class="primary" onclick="window.location.href='register.html'">Register</button>
           `;
         }
       }
@@ -403,55 +383,6 @@
         document.getElementById("profBirth").value = user.birth || "";
       }
 
-      function handleAuthLogin(event) {
-        event.preventDefault();
-        const email = document.getElementById("inputLoginEmail").value.trim();
-        const password = document.getElementById("inputLoginPassword").value;
-
-        if (!email || !password) {
-          alert("Email and password are required.");
-          return;
-        }
-
-        const stored = JSON.parse(localStorage.getItem("tixqueue-user") || "null");
-        if (!stored || stored.email !== email) {
-          alert("User not found. Please register first.");
-          return;
-        }
-
-        appState.user = stored;
-        renderAuthControls();
-        fillProfileForm();
-        renderTransactions();
-        switchView("landing");
-      }
-
-      function handleAuthRegister(event) {
-        event.preventDefault();
-
-        const nik = document.getElementById("inputRegNik").value.trim();
-        const birth = document.getElementById("inputRegBirth").value;
-        const email = document.getElementById("inputRegEmail").value.trim();
-        const password = document.getElementById("inputRegPassword").value;
-        const confirm = document.getElementById("inputRegConfirm").value;
-
-        if (!/^\d{16}$/.test(nik)) {
-          alert("NIK must be exactly 16 digits.");
-          return;
-        }
-
-        if (password !== confirm) {
-          alert("Password confirmation does not match.");
-          return;
-        }
-
-        appState.user = { nik, birth, email, password };
-        localStorage.setItem("tixqueue-user", JSON.stringify(appState.user));
-        renderAuthControls();
-        fillProfileForm();
-        switchView("profile");
-      }
-
       function handleProfileUpdate(event) {
         event.preventDefault();
 
@@ -473,8 +404,20 @@
         alert("Profile updated.");
       }
 
-      function logout() {
-        appState.user = null;
+      async function logout() {
+        try {
+          if (appState.token) {
+            await fetch(`${API_BASE}/user/logout`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${appState.token}`,
+              },
+            });
+          }
+        } catch (_error) {
+        }
+
+        clearAuthSession();
         renderAuthControls();
         switchView("landing");
       }
@@ -563,9 +506,24 @@
       }
 
       function initializeApp() {
+        const savedToken = localStorage.getItem("tixqueue-token");
         const savedUser = JSON.parse(localStorage.getItem("tixqueue-user") || "null");
-        if (savedUser) {
-          appState.user = savedUser;
+
+        if (savedToken) {
+          const payload = parseJwt(savedToken);
+          const now = Math.floor(Date.now() / 1000);
+
+          if (payload && (!payload.exp || payload.exp > now)) {
+            appState.token = savedToken;
+            appState.user = savedUser || {
+              user_id: payload.user_id,
+              email: payload.email,
+              full_name: payload.full_name,
+              role: payload.role || "user",
+            };
+          } else {
+            clearAuthSession();
+          }
         }
 
         renderAuthControls();
