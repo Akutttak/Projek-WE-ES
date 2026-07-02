@@ -9,4 +9,5 @@ try {
 module.exports = {
   users,
   admin,
+  transactions,
 };
