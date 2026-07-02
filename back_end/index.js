@@ -1,14 +1,16 @@
 const express = require("express");
+const cookieParser = require("cookie-parser");
 const { connectDB } = require("./config/config");
 const models = require("./models/associations");
 const syncModels = require("./models/sync");
-const { users, admin } = require("./routes");
+const { users, admin, transactions} = require("./routes");
 
 const app = express();
 const PORT = process.env.PORT || 3010;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -108,6 +110,7 @@ async function startServer() {
 startServer();
 
 app.use("", users);
+app.use("", transactions);
 if (admin) {
   app.use("", admin);
 }

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.JWT_SECRET || "JasonLowkeyGay";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function adminAuth(req, res, next) {
   const authHeader = req.headers.authorization || "";

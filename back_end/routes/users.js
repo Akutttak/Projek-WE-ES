@@ -38,9 +38,19 @@ function signAccessToken(user) {
 
 function sendAuthResponse(res, user, statusCode = 200) {
     const token = signAccessToken(user);
+
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: 'strict',
+        maxAge: 2 * 60 * 60 * 1000 // 2 jam (sesuai JWT_EXPIRES_IN Anda)
+    });
+
+    console.log("=== BACKEND: COOKIE BERHASIL DI-SET SAAT LOGIN ===");
+    console.log("Token yang dimasukkan ke cookie:", token.substring(0, 20) + "...");
+
     return res.status(statusCode).json({
-        message: "Authentication successful.",
-        token,
+        message: "Authentication successful. Cookie has been set.",
         user: {
             user_id: user.user_id,
             nik: user.nik,

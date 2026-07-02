@@ -1,5 +1,5 @@
 const express = require("express");
-const { auth, allowRoles } = require("../middlewares/auth");
+const { verifyJWT, allowRoles } = require("../middlewares/verifyJWT");
 const { validateBody, Joi } = require("../middlewares/validators");
 const controller = require("../controllers/transactionController");
 
@@ -22,19 +22,19 @@ const statusSchema = Joi.object({
   status: Joi.string().valid("pending", "success", "failed").required(),
 });
 
-router.post("/api/transactions", auth, validateBody(transactionSchema), controller.createTransaction);
-router.get("/api/transactions", auth, controller.listTransactions);
-router.get("/api/transactions/:id", auth, controller.detailTransaction);
+router.post("/api/transactions", verifyJWT, validateBody(transactionSchema), controller.createTransaction);
+router.get("/api/transactions", verifyJWT, controller.listTransactions);
+router.get("/api/transactions/:id", verifyJWT, controller.detailTransaction);
 router.put(
   "/api/transactions/:id/status",
-  auth,
+  verifyJWT,
   allowRoles("admin"),
   validateBody(statusSchema),
   controller.updateTransactionStatus,
 );
 router.delete(
   "/api/transactions/:id",
-  auth,
+  verifyJWT,
   allowRoles("admin"),
   controller.deleteTransaction,
 );
