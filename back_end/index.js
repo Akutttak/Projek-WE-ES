@@ -3,7 +3,8 @@ const cookieParser = require("cookie-parser");
 const { connectDB } = require("./config/config");
 const models = require("./models/associations");
 const syncModels = require("./models/sync");
-const { users, admin, transactions} = require("./routes");
+const { users, admin, transactions } = require("./routes");
+const ticketWorker = require("./workers/ticketWorker");
 
 const app = express();
 const PORT = process.env.PORT || 3010;
@@ -93,10 +94,26 @@ app.get("/", (req, res) => {
   res.json({ message: "Backend is running" });
 });
 
+// Register routes SEBELUM server listen
+app.use("", users);
+app.use("", transactions);
+if (admin) {
+  app.use("", admin);
+}
+
 async function startServer() {
   try {
     await connectDB();
     await syncModels();
+
+    // Start the ticket worker untuk process queue jobs
+    console.log("🚀 Starting ticket worker...");
+    ticketWorker.on("completed", (job) => {
+      console.log(`✅ Job ${job.id} completed successfully`);
+    });
+    ticketWorker.on("failed", (job, err) => {
+      console.error(`❌ Job ${job.id} failed:`, err.message);
+    });
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
@@ -108,9 +125,3 @@ async function startServer() {
 }
 
 startServer();
-
-app.use("", users);
-app.use("", transactions);
-if (admin) {
-  app.use("", admin);
-}

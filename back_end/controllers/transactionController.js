@@ -90,56 +90,95 @@ function canAccessTransaction(req, transaction) {
 //   }
 // }
 
-async function createTransaction(req, res) { 
+async function createTransaction(req, res) {
   // Biarkan transaksi database diurusi oleh Worker saja nanti.
 
   try {
     const { payment_method, items } = req.body;
-    
+
     const currentUser = req.user || req.yanglogin;
     if (!currentUser) {
-      return res.status(401).json({ message: "Data pengguna yang login tidak menerus ke controller." });
+      return res.status(401).json({
+        message: "Data pengguna yang login tidak menerus ke controller.",
+      });
     }
 
-    // Langsung buat record transaksi "kosong" dengan status antre.
+    // Validasi items tidak kosong
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: "Items tidak boleh kosong." });
+    }
+
+    // Langsung buat record transaksi "kosong" dengan status pending.
     // Kita set total_amount menjadi 0 dulu, nanti Worker yang menghitung total aslinya.
     const transaction = await Transaction.create({
       user_id: currentUser.user_id,
       total_amount: 0,
       payment_method,
-      status: "in_queue",
+      status: "pending",
     });
 
-    // Masukkan job ke BullMQ Redis. 
+    // Masukkan job ke BullMQ Redis.
     // Data inilah yang akan dibaca dan dieksekusi satu per satu oleh Worker di background.
-    await ticketQueue.add("process-ticket", {
-      transaction_id: transaction.transaction_id,
-      user_id: currentUser.user_id,
-      payment_method,
-      items,
-    });
+    try {
+      await ticketQueue.add(
+        "process-ticket",
+        {
+          transaction_id: transaction.transaction_id,
+          user_id: currentUser.user_id,
+          payment_method,
+          items,
+        },
+        {
+          // Tambahkan options untuk handle high load saat iterasi di Postman
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 2000,
+          },
+        },
+      );
+    } catch (queueErr) {
+      // Jika queue gagal, hapus transaction yang sudah dibuat
+      await Transaction.destroy({
+        where: { transaction_id: transaction.transaction_id },
+      });
+      console.error("[Controller] Queue add failed:", queueErr.message);
+      return res.status(503).json({
+        message: "Queue service sedang tidak tersedia. Silakan coba lagi.",
+        details: queueErr.message,
+      });
+    }
 
     // Hitung posisi antrean di depan dia
-    const jobCounts = await ticketQueue.getJobCounts();
-    const orangDiDepan = jobCounts.waiting || 0;
+    let orangDiDepan = 0;
+    try {
+      const jobCounts = await ticketQueue.getJobCounts();
+      orangDiDepan = jobCounts.waiting || 0;
+    } catch (countErr) {
+      console.error("[Controller] Get job counts failed:", countErr.message);
+      orangDiDepan = 0;
+    }
 
     // Langsung kembalikan respon ke user (Sangat cepat!).
-    return res.status(202).json({ 
+    return res.status(202).json({
       message: "Anda telah masuk dalam antrean pembelian tiket.",
       transaction_id: transaction.transaction_id,
-      status: "in_queue",
-      queue_position: orangDiDepan, 
+      status: "pending",
+      queue_position: orangDiDepan,
     });
-
   } catch (err) {
     // Jika gagal memasukkan data ke antrean Redis
-    return res.status(500).json({ message: "Create transaction failed.", details: err.message });
+    console.error("[Controller] Create transaction error:", err.message);
+    return res
+      .status(500)
+      .json({ message: "Create transaction failed.", details: err.message });
   }
 }
 
 async function listTransactions(req, res) {
   try {
-    const where = req.user.role === "admin" ? {} : { user_id: req.user.user_id };
+    const where =
+      req.user.role === "admin" ? {} : { user_id: req.user.user_id };
     const transactions = await Transaction.findAll({
       where,
       include: [{ model: TransactionItem, as: "items" }],
@@ -147,7 +186,9 @@ async function listTransactions(req, res) {
     });
     return res.status(200).json({ transactions });
   } catch (err) {
-    return res.status(500).json({ message: "Fetch transactions failed.", details: err.message });
+    return res
+      .status(500)
+      .json({ message: "Fetch transactions failed.", details: err.message });
   }
 }
 
@@ -156,35 +197,46 @@ async function detailTransaction(req, res) {
     const transaction = await Transaction.findByPk(req.params.id, {
       include: [{ model: TransactionItem, as: "items" }],
     });
-    if (!transaction) return res.status(404).json({ message: "Transaction not found." });
+    if (!transaction)
+      return res.status(404).json({ message: "Transaction not found." });
     if (!canAccessTransaction(req, transaction)) {
       return res.status(403).json({ message: "Access forbidden." });
     }
     return res.status(200).json({ transaction });
   } catch (err) {
-    return res.status(500).json({ message: "Fetch transaction failed.", details: err.message });
+    return res
+      .status(500)
+      .json({ message: "Fetch transaction failed.", details: err.message });
   }
 }
 
 async function updateTransactionStatus(req, res) {
   try {
     const transaction = await Transaction.findByPk(req.params.id);
-    if (!transaction) return res.status(404).json({ message: "Transaction not found." });
+    if (!transaction)
+      return res.status(404).json({ message: "Transaction not found." });
     await transaction.update({ status: req.body.status });
-    return res.status(200).json({ message: "Transaction updated.", transaction });
+    return res
+      .status(200)
+      .json({ message: "Transaction updated.", transaction });
   } catch (err) {
-    return res.status(500).json({ message: "Update transaction failed.", details: err.message });
+    return res
+      .status(500)
+      .json({ message: "Update transaction failed.", details: err.message });
   }
 }
 
 async function deleteTransaction(req, res) {
   try {
     const transaction = await Transaction.findByPk(req.params.id);
-    if (!transaction) return res.status(404).json({ message: "Transaction not found." });
+    if (!transaction)
+      return res.status(404).json({ message: "Transaction not found." });
     await transaction.destroy();
     return res.status(200).json({ message: "Transaction deleted." });
   } catch (err) {
-    return res.status(500).json({ message: "Delete transaction failed.", details: err.message });
+    return res
+      .status(500)
+      .json({ message: "Delete transaction failed.", details: err.message });
   }
 }
 
