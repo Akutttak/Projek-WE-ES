@@ -14,6 +14,17 @@ async function createTransaction(req, res) {
 
   try {
     const { payment_method, items } = req.body;
+    console.log("=== CONTROLLER TRANSACTION: ISI REQ.USER ===", req.user);
+    console.log("=== CONTROLLER TRANSACTION: ISI REQ.YANGLOGIN ===", req.yanglogin);
+
+    // Jalur aman: Ambil dari req.user jika ada, jika tidak ada ambil dari req.yanglogin
+    const currentUser = req.user || req.yanglogin;
+
+    if (!currentUser) {
+      await dbTx.rollback();
+      return res.status(401).json({ message: "Data pengguna yang login tidak menerus ke controller." });
+    }
+
     let total = 0;
     const preparedItems = [];
 
@@ -41,7 +52,7 @@ async function createTransaction(req, res) {
 
     const transaction = await Transaction.create(
       {
-        user_id: req.user.user_id,
+        user_id: currentUser.user_id,
         total_amount: total,
         payment_method,
         status: "pending",
