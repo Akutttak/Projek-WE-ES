@@ -108,13 +108,13 @@ async function createTransaction(req, res) {
       return res.status(400).json({ message: "Items tidak boleh kosong." });
     }
 
-    // Langsung buat record transaksi "kosong" dengan status pending.
-    // Kita set total_amount menjadi 0 dulu, nanti Worker yang menghitung total aslinya.
+    // Langsung buat record transaksi "kosong" dengan status in_queue.
+    // Worker akan memprosesnya di background dan mengubahnya menjadi pending/failed.
     const transaction = await Transaction.create({
       user_id: currentUser.user_id,
       total_amount: 0,
       payment_method,
-      status: "pending",
+      status: "in_queue",
     });
 
     // Masukkan job ke BullMQ Redis.
@@ -150,21 +150,28 @@ async function createTransaction(req, res) {
     }
 
     // Hitung posisi antrean di depan dia
-    let orangDiDepan = 0;
+    let estimatedPeopleAhead = 0;
+    const WAIT_PER_PERSON_SECONDS = 5;
+
     try {
       const jobCounts = await ticketQueue.getJobCounts();
-      orangDiDepan = jobCounts.waiting || 0;
+      const waitingJobs = jobCounts.waiting || 0;
+      estimatedPeopleAhead = Math.max(0, waitingJobs - 1);
     } catch (countErr) {
       console.error("[Controller] Get job counts failed:", countErr.message);
-      orangDiDepan = 0;
+      estimatedPeopleAhead = 0;
     }
+
+    const estimatedWaitSeconds = estimatedPeopleAhead * WAIT_PER_PERSON_SECONDS;
 
     // Langsung kembalikan respon ke user (Sangat cepat!).
     return res.status(202).json({
       message: "Anda telah masuk dalam antrean pembelian tiket.",
       transaction_id: transaction.transaction_id,
-      status: "pending",
-      queue_position: orangDiDepan,
+      status: "in_queue",
+      queue_position: estimatedPeopleAhead,
+      estimated_wait_seconds: estimatedWaitSeconds,
+      estimated_wait_text: `Perkiraan menunggu ${estimatedWaitSeconds} detik`,
     });
   } catch (err) {
     // Jika gagal memasukkan data ke antrean Redis
@@ -240,10 +247,55 @@ async function deleteTransaction(req, res) {
   }
 }
 
+// Endpoint baru: GET /api/transactions/queue/:id
+async function checkQueueStatus(req, res) {
+  try {
+    const transactionId = req.params.id;
+    const transaction = await Transaction.findByPk(transactionId);
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Antrean tidak ditemukan." });
+    }
+
+    // Jika worker sudah selesai memproses (sukses dapat tiket)
+    if (transaction.status === "pending") {
+      return res.status(200).json({
+        status: "ready",
+        message: "Giliran Anda telah tiba! Silakan lakukan pembayaran.",
+        transaction_data: transaction,
+      });
+    }
+
+    // Jika worker gagal memproses (kuota habis)
+    if (transaction.status === "failed") {
+      return res.status(200).json({
+        status: "failed",
+        message: "Mohon maaf, tiket sudah habis saat giliran Anda tiba.",
+      });
+    }
+
+    // JIKA MASIH DALAM ANTREAN (status === "in_queue")
+    // Hitung sisa job di Redis untuk menampilkan angka real-time
+    const jobCounts = await ticketQueue.getJobCounts();
+    const sisaAntrean = jobCounts.waiting || 0;
+
+    return res.status(200).json({
+      status: "in_queue",
+      message: "Harap menunggu...",
+      orang_di_depan: sisaAntrean,
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Gagal mengecek antrean", details: err.message });
+  }
+}
+
 module.exports = {
   createTransaction,
   listTransactions,
   detailTransaction,
   updateTransactionStatus,
   deleteTransaction,
+  checkQueueStatus,
 };

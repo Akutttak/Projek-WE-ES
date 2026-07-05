@@ -1,36 +1,38 @@
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "JasonLowkeyGay";
+
+function extractAccessToken(req) {
+  const authHeader = req.headers.authorization || "";
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (match) {
+    return match[1];
+  }
+
+  return req.cookies?.accessToken || req.cookies?.token || null;
+}
 
 const verifyJWT = (req, res, next) => {
-  console.log("=== BACKEND: REQUEST MASUK KE MIDDLEWARE VERIFYJWT ===");
-  console.log("Headers yang diterima:", req.headers);
-  console.log("Cookies yang terdeteksi oleh cookie-parser:", req.cookies);
-
-  const accessToken = req.cookies.token;
-
-  console.log(
-    "Token yang diekstrak dari cookie:",
-    accessToken ? "Ada (Valid/Tidaknya akan dicek)" : "KOSONG/UNDEFINED",
-  );
+  const accessToken = extractAccessToken(req);
 
   if (!accessToken) {
     return res.status(401).json({
-      message: "blm login (cookie not found)",
+      message: "Please login first.",
     });
   }
 
   jwt.verify(accessToken, JWT_SECRET, (err, decoded) => {
-    // Kalau token expired atau dimanipulasi
     if (err) {
-      return res.status(401).json({ message: "Token tidak valid atau sudah expired" });
+      return res
+        .status(401)
+        .json({ message: "Token tidak valid atau sudah expired" });
     }
 
-    // Kalau semua aman, teruskan data user ke controller
-    console.log("✅ JWT VERIFY SUCCESS. User login:", decoded.email);
+    if (decoded.type !== "access") {
+      return res.status(401).json({ message: "Invalid token type." });
+    }
+
     req.yanglogin = decoded;
     req.user = decoded;
-
-    // Lanjut ke program/controller berikutnya
     next();
   });
 };

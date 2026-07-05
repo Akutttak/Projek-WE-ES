@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TixQueue - Waiting Room</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .queue-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            border-top: 8px solid #10b981; /* Warna hijau khas antrean sukses */
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+        p.subtitle {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        /* Animasi Loading Bar */
+        .progress-bar-container {
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        .progress-bar-fill {
+            background-color: #10b981;
+            height: 100%;
+            width: 30%;
+            border-radius: 9999px;
+            animation: loadingAnimation 2s infinite linear;
+        }
+        @keyframes loadingAnimation {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(350%); }
+        }
+        /* Kotak Informasi Utama Antrean */
+        .info-box {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .queue-number {
+            font-size: 36px;
+            font-weight: 800;
+            color: #059669;
+            margin: 10px 0;
+        }
+        .warning-text {
+            color: #ef4444;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="queue-container">
+        <div class="logo">🎟️ TixQueue</div>
+        <h2>Anda Berada dalam Antrean</h2>
+        <p class="subtitle">Mohon tunggu sebentar, sistem sedang mengalokasikan kuota tiket Anda secara adil.</p>
+        
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill"></div>
+        </div>
+
+        <div class="info-box">
+            <div style="color: #4b5563; font-size: 14px;">Jumlah orang di depan Anda:</div>
+            <div id="queue-count" class="queue-number">Menghitung...</div>
+            <div id="status-text" style="color: #6b7280; font-size: 13px;">Menghubungkan ke server...</div>
+        </div>
+
+        <p class="warning-text">⚠️ JANGAN menyegarkan (refresh) atau menutup halaman ini agar posisi antrean Anda tidak hilang.</p>
+    </div>
+
+    <script>
+        // 1. Ambil ID Transaksi dari parameter URL (?id=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const transactionId = urlParams.get('id');
+
+        // Jika tidak ada ID di URL, kembalikan ke halaman utama
+        if (!transactionId) {
+            alert("ID Transaksi tidak ditemukan!");
+            window.location.href = "/index.html"; 
+        }
+
+        const queueCountEl = document.getElementById('queue-count');
+        const statusTextEl = document.getElementById('status-text');
+
+        // 2. Fungsi untuk menembak endpoint status antrean di Backend
+        async function checkQueue() {
+            try {
+                // Sesuaikan URL endpoint dengan path rute backend Anda
+                const response = await fetch(`http://localhost:3010/api/transactions/queue/${transactionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                // KONDISI A: Masih mengantre
+                if (result.status === "in_queue") {
+                    queueCountEl.innerText = result.orang_di_depan;
+                    statusTextEl.innerText = "Antrean Anda bergerak maju. Harap tetap di halaman ini.";
+                } 
+                // KONDISI B: Giliran tiba (Worker sukses memproses)
+                else if (result.status === "ready") {
+                    clearInterval(queueInterval); // Setop hit ke backend
+                    statusTextEl.innerText = "Mengarahkan ke halaman pembayaran...";
+                    alert("Selamat! Giliran Anda tiba. Silakan selesaikan pembayaran.");
+                    
+                    // Alihkan user ke halaman invoice / pembayaran Anda
+                    window.location.href = `/payment.html?id=${transactionId}`;
+                } 
+                // KONDISI C: Gagal war (Kuota habis)
+                else if (result.status === "failed") {
+                    clearInterval(queueInterval);
+                    alert("Yaaah! Tiket habis terjual saat Anda mengantre.");
+                    window.location.href = "/index.html"; // Kembalikan ke katalog
+                }
+
+            } catch (error) {
+                console.error("Gagal melakukan polling antrean:", error);
+                statusTextEl.innerText = "Koneksi terputus, mencoba menghubungkan kembali...";
+            }
+        }
+
+        // 3. Jalankan pengecekan pertama kali secara instan saat halaman dimuat
+        checkQueue();
+
+        // 4. Lakukan Polling: Jalankan fungsi checkQueue setiap 3000ms (3 detik)
+        const queueInterval = setInterval(checkQueue, 3000);
+    </script>
+</body>
+</html>

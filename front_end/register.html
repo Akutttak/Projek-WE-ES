@@ -1,265 +1,306 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TixQueue Register</title>
-  <style>
-    :root {
-      --bg: #f5f7fa;
-      --surface: #ffffff;
-      --line: #d7dee8;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --brand: #0f766e;
-      --brand-soft: #ecfdf5;
-      --danger: #b91c1c;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TixQueue Register</title>
+    <style>
+      :root {
+        --bg: #f5f7fa;
+        --surface: #ffffff;
+        --line: #d7dee8;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --brand: #0f766e;
+        --brand-soft: #ecfdf5;
+        --danger: #b91c1c;
+      }
 
-    * {
-      box-sizing: border-box;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
 
-    .container {
-      width: min(980px, 92vw);
-      margin: 0 auto;
-    }
+      .container {
+        width: min(980px, 92vw);
+        margin: 0 auto;
+      }
 
-    .topbar {
-      border-bottom: 1px solid var(--line);
-      background: var(--surface);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
 
-    .topbar-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem 0;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
+      .topbar-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
 
-    .brand {
-      margin: 0;
-      font-size: 1.15rem;
-      text-decoration: none;
-      color: var(--text);
-      font-weight: 700;
-    }
+      .brand {
+        margin: 0;
+        font-size: 1.15rem;
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 700;
+      }
 
-    .nav {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
+      .nav {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
 
-    button,
-    .link-btn {
-      border: 1px solid var(--line);
-      background: var(--surface);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 0.45rem 0.75rem;
-      cursor: pointer;
-      text-decoration: none;
-      font-size: 0.95rem;
-    }
+      button,
+      .link-btn {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
 
-    button.primary {
-      background: var(--brand);
-      border-color: var(--brand);
-      color: #ffffff;
-    }
+      button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #ffffff;
+      }
 
-    main {
-      padding: 1.5rem 0 2.2rem;
-    }
+      main {
+        padding: 1.5rem 0 2.2rem;
+      }
 
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 1rem;
-      margin: 0 auto;
-      width: min(540px, 100%);
-    }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0 auto;
+        width: min(540px, 100%);
+      }
 
-    .badge {
-      background: var(--brand-soft);
-      color: var(--brand);
-      border: 1px solid #b7e4d9;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      padding: 0.15rem 0.5rem;
-      width: fit-content;
-    }
+      .badge {
+        background: var(--brand-soft);
+        color: var(--brand);
+        border: 1px solid #b7e4d9;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        padding: 0.15rem 0.5rem;
+        width: fit-content;
+      }
 
-    .muted {
-      color: var(--muted);
-      margin-top: 0.3rem;
-    }
+      .muted {
+        color: var(--muted);
+        margin-top: 0.3rem;
+      }
 
-    .form-grid {
-      display: grid;
-      gap: 0.7rem;
-      margin-top: 1rem;
-    }
+      .form-grid {
+        display: grid;
+        gap: 0.7rem;
+        margin-top: 1rem;
+      }
 
-    .form-row {
-      display: grid;
-      gap: 0.3rem;
-    }
+      .form-row {
+        display: grid;
+        gap: 0.3rem;
+      }
 
-    .form-row input {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 0.55rem 0.6rem;
-      background: #fff;
-    }
+      .form-row input {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.55rem 0.6rem;
+        background: #fff;
+      }
 
-    .status {
-      margin-top: 0.6rem;
-      font-size: 0.9rem;
-      color: var(--muted);
-      min-height: 1.2rem;
-    }
+      .status {
+        margin-top: 0.6rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+        min-height: 1.2rem;
+      }
 
-    .danger {
-      color: var(--danger);
-    }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="container topbar-row">
-      <a class="brand" href="./index.html">TixQueue</a>
-      <div class="nav">
-        <a class="link-btn" href="./index.html">Home</a>
-        <a class="link-btn" href="./login.html">Login</a>
+      .danger {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container topbar-row">
+        <a class="brand" href="./index.html">TixQueue</a>
+        <div class="nav">
+          <a class="link-btn" href="./index.html">Home</a>
+          <a class="link-btn" href="./login.html">Login</a>
+        </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <main class="container">
-    <section class="panel">
-      <p class="badge">Create Account</p>
-      <h2>Register</h2>
-      <p class="muted">Register once, then login to access your queue and transactions.</p>
+    <main class="container">
+      <section class="panel">
+        <p class="badge">Create Account</p>
+        <h2>Register</h2>
+        <p class="muted">
+          Register once, then login to access your queue and transactions.
+        </p>
 
-      <form id="registerForm" class="form-grid">
-        <label class="form-row">
-          NIK (16 digits)
-          <input id="nikInput" type="text" minlength="16" maxlength="16" required />
-        </label>
-        <label class="form-row">
-          Full name
-          <input id="fullNameInput" type="text" required />
-        </label>
-        <label class="form-row">
-          Birth date
-          <input id="birthDateInput" type="date" required />
-        </label>
-        <label class="form-row">
-          Email
-          <input id="emailInput" type="email" autocomplete="email" required />
-        </label>
-        <label class="form-row">
-          Password
-          <input id="passwordInput" type="password" autocomplete="new-password" required />
-        </label>
-        <label class="form-row">
-          Confirm password
-          <input id="confirmPasswordInput" type="password" autocomplete="new-password" required />
-        </label>
-        <button class="primary" type="submit">Register</button>
-      </form>
+        <form id="registerForm" class="form-grid">
+          <label class="form-row">
+            NIK (16 digits)
+            <input
+              id="nikInput"
+              type="text"
+              minlength="16"
+              maxlength="16"
+              required
+            />
+          </label>
+          <label class="form-row">
+            Full name
+            <input id="fullNameInput" type="text" required />
+          </label>
+          <label class="form-row">
+            Birth date
+            <input id="birthDateInput" type="date" required />
+          </label>
+          <label class="form-row">
+            Email
+            <input id="emailInput" type="email" autocomplete="email" required />
+          </label>
+          <label class="form-row">
+            Password
+            <input
+              id="passwordInput"
+              type="password"
+              autocomplete="new-password"
+              required
+            />
+          </label>
+          <label class="form-row">
+            Confirm password
+            <input
+              id="confirmPasswordInput"
+              type="password"
+              autocomplete="new-password"
+              required
+            />
+          </label>
+          <button class="primary" type="submit">Register</button>
+        </form>
 
-      <div id="statusText" class="status"></div>
-    </section>
-  </main>
+        <div id="statusText" class="status"></div>
+      </section>
+    </main>
 
-  <script>
-    const API_BASE = "http://localhost:3010/api";
+    <script>
+      const API_BASE = "http://localhost:3010/api";
 
-    function setStatus(text, isError = false) {
-      const el = document.getElementById("statusText");
-      el.textContent = text;
-      el.className = isError ? "status danger" : "status";
-    }
-
-    function saveAuthSession(payload) {
-      localStorage.setItem("tixqueue-token", payload.token);
-      localStorage.setItem("tixqueue-user", JSON.stringify(payload.user));
-    }
-
-    document.getElementById("registerForm").addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      const nik = document.getElementById("nikInput").value.trim();
-      const full_name = document.getElementById("fullNameInput").value.trim();
-      const birth_date = document.getElementById("birthDateInput").value;
-      const email = document.getElementById("emailInput").value.trim();
-      const password = document.getElementById("passwordInput").value;
-      const confirmPassword = document.getElementById("confirmPasswordInput").value;
-
-      if (!/^\d{16}$/.test(nik)) {
-        setStatus("NIK must be exactly 16 digits.", true);
-        return;
+      function setStatus(text, isError = false) {
+        const el = document.getElementById("statusText");
+        el.textContent = text;
+        el.className = isError ? "status danger" : "status";
       }
 
-      if (!full_name) {
-        setStatus("Full name is required.", true);
-        return;
+      function saveAuthSession(payload) {
+        const token = payload?.accessToken || payload?.token || null;
+        const user = payload?.user || null;
+
+        if (user) {
+          localStorage.setItem("tixqueue-user", JSON.stringify(user));
+          localStorage.setItem("tixqueue-authenticated", "true");
+        } else {
+          localStorage.removeItem("tixqueue-user");
+          localStorage.removeItem("tixqueue-authenticated");
+        }
+
+        if (token) {
+          localStorage.setItem("tixqueue-token", token);
+        } else {
+          localStorage.removeItem("tixqueue-token");
+        }
       }
 
-      if (!birth_date) {
-        setStatus("Birth date is required.", true);
-        return;
-      }
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
 
-      if (password !== confirmPassword) {
-        setStatus("Password confirmation does not match.", true);
-        return;
-      }
+          const nik = document.getElementById("nikInput").value.trim();
+          const full_name = document
+            .getElementById("fullNameInput")
+            .value.trim();
+          const birth_date = document.getElementById("birthDateInput").value;
+          const email = document.getElementById("emailInput").value.trim();
+          const password = document.getElementById("passwordInput").value;
+          const confirmPassword = document.getElementById(
+            "confirmPasswordInput",
+          ).value;
 
-      setStatus("Creating account...");
+          if (!/^\d{16}$/.test(nik)) {
+            setStatus("NIK must be exactly 16 digits.", true);
+            return;
+          }
 
-      try {
-        const response = await fetch(`${API_BASE}/user/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nik, full_name, email, password, birth_date }),
+          if (!full_name) {
+            setStatus("Full name is required.", true);
+            return;
+          }
+
+          if (!birth_date) {
+            setStatus("Birth date is required.", true);
+            return;
+          }
+
+          if (password !== confirmPassword) {
+            setStatus("Password confirmation does not match.", true);
+            return;
+          }
+
+          setStatus("Creating account...");
+
+          try {
+            const response = await fetch(`${API_BASE}/user/register`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                nik,
+                full_name,
+                email,
+                password,
+                birth_date,
+              }),
+              credentials: "include", // Include cookies for session management
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.message || "Register failed.");
+            }
+
+            saveAuthSession(data);
+            setStatus("Register successful. Redirecting...");
+            setTimeout(() => {
+              window.location.href = "./index.html";
+            }, 350);
+          } catch (error) {
+            setStatus(error.message || "Unable to register.", true);
+          }
         });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Register failed.");
-        }
-
-        if (!data.token) {
-          throw new Error("Server did not return a token.");
-        }
-
-        saveAuthSession(data);
-        setStatus("Register successful. Redirecting...");
-        setTimeout(() => {
-          window.location.href = "./index.html";
-        }, 350);
-      } catch (error) {
-        setStatus(error.message || "Unable to register.", true);
-      }
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

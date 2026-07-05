@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TixQueue Minimal</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TixQueue Minimal</title>
     <style>
       :root {
         --bg: #f5f7fa;
@@ -120,6 +120,31 @@
         margin-top: 0.85rem;
       }
 
+      .queue-progress {
+        width: 100%;
+        background: #e5e7eb;
+        border-radius: 9999px;
+        height: 14px;
+        margin: 1rem 0 0.75rem;
+        overflow: hidden;
+      }
+
+      .queue-progress-bar {
+        width: 30%;
+        height: 100%;
+        background: linear-gradient(90deg, #0f766e, #34d399);
+        border-radius: 9999px;
+        transition: width 0.35s ease;
+      }
+
+      .queue-tile {
+        background: #f8fafc;
+        border: 1px solid #d1d5db;
+        padding: 1rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+      }
+
       .card {
         border: 1px solid var(--line);
         border-radius: 10px;
@@ -202,7 +227,9 @@
         <section class="panel">
           <p class="badge" id="heroTag">System Ready</p>
           <h2 id="heroTitle">Ticket Catalog</h2>
-          <p class="muted" id="heroDescription">Simple UI for core ticket functions.</p>
+          <p class="muted" id="heroDescription">
+            Simple UI for core ticket functions.
+          </p>
           <form class="search-row" onsubmit="searchCatalog(event)">
             <input type="search" id="searchInput" placeholder="Search events" />
             <button class="primary" type="submit">Search</button>
@@ -210,7 +237,7 @@
         </section>
 
         <section class="panel">
-          <h3 style="margin-top: 0;">Catalog</h3>
+          <h3 style="margin-top: 0">Catalog</h3>
           <div id="catalogContainer" class="catalog"></div>
         </section>
       </div>
@@ -241,13 +268,43 @@
       </div>
 
       <div id="view-queue" class="view-container">
-        <section class="panel">
-          <h2>Queue Status</h2>
-          <p class="muted">Simple queue simulation for frontend flow.</p>
-          <button class="primary" onclick="simulateQueue()">Refresh Queue</button>
-          <div class="status">Queue No: <strong id="qNo">-</strong></div>
-          <div class="status">Total Queue: <strong id="qTotal">-</strong></div>
-          <div class="status">Estimated Time: <strong id="qTime">-</strong></div>
+        <section class="panel" style="text-align: center; padding: 2rem 1rem">
+          <h2 style="margin-bottom: 0.5rem">🎟️ Anda Berada Dalam Antrean</h2>
+          <p class="muted">
+            Sistem sedang mengalokasikan kuota tiket Anda secara adil.
+          </p>
+
+          <div id="queueLoading" style="margin: 2rem 0">
+            <p>Memasukkan Anda ke dalam antrean...</p>
+          </div>
+
+          <div
+            id="realQueueContainer"
+            style="display: none; margin-top: 1.5rem"
+          >
+            <div class="queue-tile">
+              <div style="font-size: 0.95rem; color: #4b5563">
+                Posisi antrean Anda saat ini
+              </div>
+              <div id="realQCount" class="queue-number">-</div>
+              <div class="queue-progress">
+                <div id="queueProgressBar" class="queue-progress-bar"></div>
+              </div>
+              <div id="realQStatus" class="status">Terhubung ke server...</div>
+              <div
+                id="queueEta"
+                style="color: #6b7280; font-size: 0.9rem; margin-top: 0.75rem"
+              >
+                Estimasi waktu tunggu akan muncul di sini.
+              </div>
+            </div>
+            <p
+              class="danger"
+              style="font-size: 0.85rem; margin-top: 1.5rem; font-weight: bold"
+            >
+              ⚠️ JANGAN refresh atau menutup halaman ini!
+            </p>
+          </div>
         </section>
       </div>
 
@@ -273,14 +330,17 @@
         user: null,
         token: null,
         catalog: [],
-        filteredCatalog: []
+        filteredCatalog: [],
       };
 
       function parseJwt(token) {
         try {
           const payload = token.split(".")[1];
           const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-          const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+          const padded = normalized.padEnd(
+            normalized.length + ((4 - (normalized.length % 4)) % 4),
+            "=",
+          );
           return JSON.parse(atob(padded));
         } catch (_error) {
           return null;
@@ -288,10 +348,23 @@
       }
 
       function saveAuthSession(payload) {
-        appState.token = payload.token;
-        appState.user = payload.user;
-        localStorage.setItem("tixqueue-token", payload.token);
-        localStorage.setItem("tixqueue-user", JSON.stringify(payload.user));
+        const accessToken = payload?.accessToken || payload?.token || null;
+
+        if (accessToken) {
+          appState.token = accessToken;
+          localStorage.setItem("tixqueue-token", accessToken);
+        } else {
+          appState.token = localStorage.getItem("tixqueue-token") || null;
+        }
+
+        appState.user = payload?.user || null;
+        if (appState.user) {
+          localStorage.setItem("tixqueue-user", JSON.stringify(appState.user));
+          localStorage.setItem("tixqueue-authenticated", "true");
+        } else {
+          localStorage.removeItem("tixqueue-user");
+          localStorage.removeItem("tixqueue-authenticated");
+        }
       }
 
       function clearAuthSession() {
@@ -299,6 +372,35 @@
         appState.user = null;
         localStorage.removeItem("tixqueue-token");
         localStorage.removeItem("tixqueue-user");
+        localStorage.removeItem("tixqueue-authenticated");
+      }
+
+      async function refreshAuthSession() {
+        const storedUser = localStorage.getItem("tixqueue-user");
+        if (!storedUser) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/user/refresh`, {
+            credentials: "include",
+          });
+          const data = await response.json();
+
+          if (!response.ok || !data.user) {
+            throw new Error(data.message || "Session expired");
+          }
+
+          saveAuthSession(data);
+          renderAuthControls();
+        } catch (_error) {
+          const parsedUser = JSON.parse(storedUser);
+          appState.user = parsedUser;
+          appState.token = null;
+          localStorage.setItem("tixqueue-user", storedUser);
+          localStorage.setItem("tixqueue-authenticated", "true");
+          renderAuthControls();
+        }
       }
 
       function switchView(viewName) {
@@ -352,20 +454,24 @@
                   <button onclick="startPurchase('${(item.genre || `Event-${index + 1}`).replace(/'/g, "")}', ${item.stock ?? 0})">Buy</button>
                 </div>
               </article>
-            `
+            `,
           )
           .join("");
       }
 
       function searchCatalog(event) {
         event.preventDefault();
-        const keyword = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+        const keyword = (document.getElementById("searchInput").value || "")
+          .toLowerCase()
+          .trim();
 
         if (!keyword) {
           appState.filteredCatalog = [...appState.catalog];
         } else {
           appState.filteredCatalog = appState.catalog.filter((item) => {
-            return `${item.genre || ""} ${item.alt || ""}`.toLowerCase().includes(keyword);
+            return `${item.genre || ""} ${item.alt || ""}`
+              .toLowerCase()
+              .includes(keyword);
           });
         }
 
@@ -380,7 +486,8 @@
 
         document.getElementById("profEmail").value = user.email || "";
         document.getElementById("profNik").value = user.nik || "";
-        document.getElementById("profBirth").value = user.birth || "";
+        document.getElementById("profBirth").value =
+          user.birth_date || user.birth || "";
       }
 
       function handleProfileUpdate(event) {
@@ -394,7 +501,7 @@
         const birth = document.getElementById("profBirth").value;
         const newPassword = document.getElementById("profPassword").value;
 
-        appState.user.birth = birth;
+        appState.user.birth_date = birth;
         if (newPassword.trim()) {
           appState.user.password = newPassword;
         }
@@ -404,71 +511,244 @@
         alert("Profile updated.");
       }
 
+      let queueInterval = null;
+
+      function startPurchase(eventName, stock) {
+        const storedUser = localStorage.getItem("tixqueue-user");
+        const isAuthenticated = Boolean(appState.user || storedUser);
+
+        if (!isAuthenticated) {
+          alert("Anda harus login terlebih dahulu untuk membeli tiket!");
+          window.location.href = "login.html";
+          return;
+        }
+
+        const target = document.getElementById("purchaseDetailsContainer");
+        target.innerHTML = `
+          <p><strong>Event:</strong> ${eventName}</p>
+          <p><strong>Sisa Kuota:</strong> ${stock}</p>
+          <div class="form-grid">
+            <label class="form-row">
+              Payment Method
+              <select id="purchasePaymentMethod">
+                <option value="gopay">GoPay</option>
+                <option value="ovo">OVO</option>
+                <option value="qris">QRIS</option>
+              </select>
+            </label>
+            <label class="form-row">
+              Quantity
+              <input id="purchaseQuantity" type="number" min="1" max="10" value="1" />
+            </label>
+            <button class="primary" onclick="confirmPurchase('${eventName}')">Konfirmasi & Masuk Antrean</button>
+          </div>
+        `;
+        switchView("purchase");
+      }
+
+      async function confirmPurchase(eventName) {
+        const target = document.getElementById("purchaseDetailsContainer");
+        target.innerHTML = `<p>Memproses data ke server...</p>`;
+
+        try {
+          const paymentMethod =
+            document.getElementById("purchasePaymentMethod")?.value || "gopay";
+          const quantity = Number(
+            document.getElementById("purchaseQuantity")?.value || 1,
+          );
+
+          const token = localStorage.getItem("tixqueue-token");
+          const response = await fetch(`${API_BASE}/transactions`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              payment_method: paymentMethod,
+              items: [
+                {
+                  ticket_type_id: 1,
+                  quantity,
+                },
+              ],
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok || response.status === 202) {
+            startRealQueue(
+              data.transaction_id ||
+                data.transaction?.transaction_id ||
+                "pending",
+              data.queue_position,
+            );
+          } else {
+            alert("Gagal: " + (data.message || "Terjadi kesalahan server"));
+            switchView("landing");
+          }
+        } catch (error) {
+          alert("Gagal terhubung ke server backend.");
+          switchView("landing");
+        }
+      }
+
+      function startRealQueue(transactionId, queuePosition = null) {
+        switchView("queue");
+        document.getElementById("queueLoading").style.display = "none";
+        document.getElementById("realQueueContainer").style.display = "block";
+        document.getElementById("realQStatus").innerText =
+          "Antrean Anda sedang dijalankan...";
+
+        const countEl = document.getElementById("realQCount");
+        const progressEl = document.getElementById("queueProgressBar");
+        const etaEl = document.getElementById("queueEta");
+
+        countEl.innerText = queuePosition ?? "-";
+        progressEl.style.width = queuePosition
+          ? `${Math.max(10, Math.min(90, 100 - queuePosition * 5))}%`
+          : "30%";
+        etaEl.innerText = queuePosition
+          ? `Estimasi waktu tunggu ${Math.max(1, queuePosition * 1.5).toFixed(0)} menit.`
+          : "Estimasi waktu tunggu akan muncul di sini.";
+
+        checkQueueStatus(transactionId);
+        if (queueInterval) clearInterval(queueInterval);
+        queueInterval = setInterval(
+          () => checkQueueStatus(transactionId),
+          3000,
+        );
+      }
+
+      async function checkQueueStatus(transactionId) {
+        try {
+          const token = localStorage.getItem("tixqueue-token");
+          const res = await fetch(
+            `${API_BASE}/transactions/queue/${transactionId}`,
+            {
+              credentials: "include",
+              headers: {
+                Authorization: token ? `Bearer ${token}` : "",
+              },
+            },
+          );
+          const data = await res.json();
+
+          const countEl = document.getElementById("realQCount");
+          const progressEl = document.getElementById("queueProgressBar");
+
+          if (data.status === "in_queue") {
+            const position = data.orang_di_depan ?? "-";
+            countEl.innerText = position;
+            progressEl.style.width =
+              typeof position === "number"
+                ? `${Math.max(10, Math.min(90, 100 - position * 5))}%`
+                : "40%";
+            document.getElementById("realQStatus").innerText =
+              position === 0
+                ? "Sedang diproses, mohon tunggu sebentar..."
+                : "Antrean bergerak maju. Harap tunggu...";
+            document.getElementById("queueEta").innerText =
+              typeof position === "number"
+                ? `Perkiraan sisa waktu ${Math.max(1, position * 1.5).toFixed(0)} menit.`
+                : "Estimasi waktu tunggu akan muncul saat data antrean tersedia.";
+          } else if (data.status === "ready" || data.status === "pending") {
+            clearInterval(queueInterval);
+            progressEl.style.width = "100%";
+            document.getElementById("realQStatus").innerText =
+              "Giliran Anda telah tiba! Mengalihkan ke transaksi...";
+            document.getElementById("queueEta").innerText =
+              "Silakan lanjutkan ke halaman transaksi atau pembayaran.";
+            setTimeout(() => {
+              alert("Giliran Anda tiba! Transaksi Anda sedang diproses.");
+              loadTransactions();
+              switchView("transactions");
+            }, 500);
+          } else if (data.status === "failed") {
+            clearInterval(queueInterval);
+            progressEl.style.width = "0%";
+            document.getElementById("realQStatus").innerText =
+              "Mohon maaf, tiket sudah habis saat giliran Anda tiba.";
+            document.getElementById("queueEta").innerText =
+              "Silakan kembali mencoba event lain atau waktu berikutnya.";
+            setTimeout(() => {
+              alert("Maaf, tiket sudah habis terjual saat giliran Anda tiba.");
+              loadTransactions();
+              switchView("transactions");
+            }, 500);
+          }
+        } catch (e) {
+          document.getElementById("realQStatus").innerText =
+            "Koneksi terputus. Mencoba menghubungkan kembali...";
+        }
+      }
+
       async function logout() {
         try {
-          if (appState.token) {
-            await fetch(`${API_BASE}/user/logout`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${appState.token}`,
-              },
-            });
-          }
-        } catch (_error) {
-        }
+          const token = localStorage.getItem("tixqueue-token");
+          await fetch(`${API_BASE}/user/logout`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          });
+        } catch (_error) {}
 
         clearAuthSession();
         renderAuthControls();
         switchView("landing");
       }
 
-      function simulateQueue() {
-        const qNo = Math.floor(Math.random() * 180) + 1;
-        const qTotal = 200;
-        const waitMinutes = Math.ceil((qNo / qTotal) * 30);
+      async function loadTransactions() {
+        if (!appState.user) {
+          renderTransactions([]);
+          return;
+        }
 
-        document.getElementById("qNo").textContent = String(qNo);
-        document.getElementById("qTotal").textContent = String(qTotal);
-        document.getElementById("qTime").textContent = `${waitMinutes} minutes`;
+        try {
+          const token = localStorage.getItem("tixqueue-token");
+          const response = await fetch(`${API_BASE}/transactions`, {
+            credentials: "include",
+            headers: {
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Unable to load transactions");
+          }
+
+          const data = await response.json();
+          renderTransactions(
+            Array.isArray(data.transactions) ? data.transactions : [],
+          );
+        } catch (_error) {
+          renderTransactions([]);
+        }
       }
 
-      function startPurchase(eventName, stock) {
-        const target = document.getElementById("purchaseDetailsContainer");
-        target.innerHTML = `
-          <p><strong>Event:</strong> ${eventName}</p>
-          <p><strong>Stock:</strong> ${stock}</p>
-          <button class="primary" onclick="confirmPurchase('${String(eventName).replace(/'/g, "")}')">Confirm Purchase</button>
-        `;
-        switchView("purchase");
-      }
-
-      function confirmPurchase(eventName) {
-        const key = "tixqueue-transactions";
-        const tx = JSON.parse(localStorage.getItem(key) || "[]");
-        tx.unshift({
-          event: eventName,
-          date: new Date().toLocaleString(),
-          status: "success"
-        });
-        localStorage.setItem(key, JSON.stringify(tx));
-        renderTransactions();
-        alert("Purchase recorded.");
-        switchView("transactions");
-      }
-
-      function renderTransactions() {
-        const list = JSON.parse(localStorage.getItem("tixqueue-transactions") || "[]");
+      function renderTransactions(transactions = []) {
         const container = document.getElementById("txListContainer");
 
-        if (!list.length) {
+        if (!transactions.length) {
           container.innerHTML = `<p class="muted">No transactions yet.</p>`;
           return;
         }
 
         container.innerHTML = `
           <ul>
-            ${list
-              .map((tx) => `<li>${tx.date} - ${tx.event} - <strong>${tx.status}</strong></li>`)
+            ${transactions
+              .map((tx) => {
+                const statusText = tx.status || "unknown";
+                const total = tx.total_amount ?? 0;
+                const createdAt = tx.created_at
+                  ? new Date(tx.created_at).toLocaleString()
+                  : "-";
+                return `<li>${createdAt} - <strong>${statusText}</strong> - Rp ${Number(total).toLocaleString("id-ID")}</li>`;
+              })
               .join("")}
           </ul>
         `;
@@ -489,10 +769,14 @@
           const data = await response.json();
           title.textContent = data.hero?.title || "Ticket Catalog";
           tag.textContent = data.hero?.tag || "System Ready";
-          description.textContent = data.hero?.description || "Simple UI for core ticket functions.";
-          searchInput.placeholder = data.hero?.searchPlaceholder || "Search events";
+          description.textContent =
+            data.hero?.description || "Simple UI for core ticket functions.";
+          searchInput.placeholder =
+            data.hero?.searchPlaceholder || "Search events";
 
-          appState.catalog = Array.isArray(data.popular?.cards) ? data.popular.cards : [];
+          appState.catalog = Array.isArray(data.popular?.cards)
+            ? data.popular.cards
+            : [];
           appState.filteredCatalog = [...appState.catalog];
           renderCatalog();
         } catch (error) {
@@ -506,34 +790,25 @@
       }
 
       function initializeApp() {
-        const savedToken = localStorage.getItem("tixqueue-token");
-        const savedUser = JSON.parse(localStorage.getItem("tixqueue-user") || "null");
+        const savedUser = JSON.parse(
+          localStorage.getItem("tixqueue-user") || "null",
+        );
+        const isAuthenticated =
+          localStorage.getItem("tixqueue-authenticated") === "true";
 
-        if (savedToken) {
-          const payload = parseJwt(savedToken);
-          const now = Math.floor(Date.now() / 1000);
-
-          if (payload && (!payload.exp || payload.exp > now)) {
-            appState.token = savedToken;
-            appState.user = savedUser || {
-              user_id: payload.user_id,
-              email: payload.email,
-              full_name: payload.full_name,
-              role: payload.role || "user",
-            };
-          } else {
-            clearAuthSession();
-          }
+        if (savedUser || isAuthenticated) {
+          appState.user = savedUser;
         }
 
         renderAuthControls();
         fillProfileForm();
-        renderTransactions();
-        simulateQueue();
         loadHomepageData();
+        refreshAuthSession().finally(() => {
+          loadTransactions();
+        });
       }
 
       initializeApp();
     </script>
   </body>
-  </html>
+</html>

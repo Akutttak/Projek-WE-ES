@@ -14,7 +14,29 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const requestOrigin = req.headers.origin;
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:3010",
+    "http://127.0.0.1:3010",
+    "null",
+  ];
+  const isAllowedOrigin =
+    requestOrigin &&
+    (allowedOrigins.includes(requestOrigin) ||
+      requestOrigin.startsWith("http://localhost:") ||
+      requestOrigin.startsWith("http://127.0.0.1:"));
+
+  if (isAllowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", requestOrigin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (req.method === "OPTIONS") {

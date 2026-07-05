@@ -88,7 +88,7 @@ CREATE TABLE transactions (
     user_id INT NOT NULL,
     total_amount DECIMAL(12, 2) NOT NULL,
     payment_method ENUM('gopay', 'ovo', 'qris') NOT NULL,
-    status ENUM('pending', 'success', 'failed') DEFAULT 'pending',
+    status ENUM('in_queue', 'pending', 'success', 'failed') DEFAULT 'in_queue',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (transaction_id),
     CONSTRAINT fk_transactions_user FOREIGN KEY (user_id) 

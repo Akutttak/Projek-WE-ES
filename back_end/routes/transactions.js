@@ -22,8 +22,14 @@ const statusSchema = Joi.object({
   status: Joi.string().valid("pending", "success", "failed").required(),
 });
 
-router.post("/api/transactions", verifyJWT, validateBody(transactionSchema), controller.createTransaction);
+router.post(
+  "/api/transactions",
+  verifyJWT,
+  validateBody(transactionSchema),
+  controller.createTransaction,
+);
 router.get("/api/transactions", verifyJWT, controller.listTransactions);
+router.get("/api/transactions/queue/:id", controller.checkQueueStatus);
 router.get("/api/transactions/:id", verifyJWT, controller.detailTransaction);
 router.put(
   "/api/transactions/:id/status",

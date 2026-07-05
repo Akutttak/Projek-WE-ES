@@ -23,8 +23,8 @@ const Transaction = sequelize.define(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM("pending", "success", "failed"),
-      defaultValue: "pending",
+      type: DataTypes.ENUM("in_queue", "pending", "success", "failed"),
+      defaultValue: "in_queue",
     },
     created_at: {
       type: DataTypes.DATE,
