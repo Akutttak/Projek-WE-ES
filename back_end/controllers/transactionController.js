@@ -5,6 +5,7 @@ const {
   Transaction,
   TransactionItem,
 } = require("../models/associations");
+const axios = require("axios");
 
 function canAccessTransaction(req, transaction) {
   return req.user.role === "admin" || transaction.user_id === req.user.user_id;
@@ -151,7 +152,7 @@ async function createTransaction(req, res) {
 
     // Hitung posisi antrean di depan dia
     let estimatedPeopleAhead = 0;
-    const WAIT_PER_PERSON_SECONDS = 5;
+    const WAIT_PER_PERSON_SECONDS = 15;
 
     try {
       const jobCounts = await ticketQueue.getJobCounts();
@@ -163,6 +164,9 @@ async function createTransaction(req, res) {
     }
 
     const estimatedWaitSeconds = estimatedPeopleAhead * WAIT_PER_PERSON_SECONDS;
+    const etaReadyAt = new Date(
+      Date.now() + estimatedWaitSeconds * 1000,
+    ).toISOString();
 
     // Langsung kembalikan respon ke user (Sangat cepat!).
     return res.status(202).json({
@@ -172,6 +176,7 @@ async function createTransaction(req, res) {
       queue_position: estimatedPeopleAhead,
       estimated_wait_seconds: estimatedWaitSeconds,
       estimated_wait_text: `Perkiraan menunggu ${estimatedWaitSeconds} detik`,
+      eta_ready_at: etaReadyAt,
     });
   } catch (err) {
     // Jika gagal memasukkan data ke antrean Redis
@@ -275,14 +280,23 @@ async function checkQueueStatus(req, res) {
     }
 
     // JIKA MASIH DALAM ANTREAN (status === "in_queue")
-    // Hitung sisa job di Redis untuk menampilkan angka real-time
+    // Hitung sisa job di Redis untuk menampilkan angka real-time.
+    const WAIT_PER_PERSON_SECONDS = 60;
     const jobCounts = await ticketQueue.getJobCounts();
-    const sisaAntrean = jobCounts.waiting || 0;
+    const waitingJobs = jobCounts.waiting || 0;
+    const queuePosition = Math.max(0, waitingJobs - 1);
+    const estimatedWaitSeconds = queuePosition * WAIT_PER_PERSON_SECONDS;
+    const etaReadyAt = new Date(
+      Date.now() + estimatedWaitSeconds * 1000,
+    ).toISOString();
 
     return res.status(200).json({
       status: "in_queue",
-      message: "Harap menunggu...",
-      orang_di_depan: sisaAntrean,
+      message: "Harap menunggu. Antrean Anda sedang diproses.",
+      queue_position: queuePosition,
+      estimated_wait_seconds: estimatedWaitSeconds,
+      estimated_wait_text: `Perkiraan menunggu ${estimatedWaitSeconds} detik`,
+      eta_ready_at: etaReadyAt,
     });
   } catch (err) {
     return res
