@@ -9,3 +9,6 @@ jadi nod montol gk ke save
 1. instal dulu di laptop masing masing namanya memurai, sesuaiin port nanti di installer harus port 6379
 2. 'npm install bullmq ioredis' di terminal
 3. udh tinggal jalanin aja kek biasa
+
+# buat run seeder
+node back_end/seeders/userSeeder.js
