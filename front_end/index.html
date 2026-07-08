@@ -216,7 +216,7 @@
           <button onclick="switchView('landing')">Home</button>
           <button onclick="switchView('queue')">Queue</button>
           <button onclick="switchView('transactions')">Transactions</button>
-          <button onclick="switchView('profile')">Profile</button>
+          <button onclick="window.location.href='user-profile.html'">Profile</button>
         </div>
         <div class="nav" id="navAuthControls"></div>
       </div>
@@ -239,31 +239,6 @@
         <section class="panel">
           <h3 style="margin-top: 0">Catalog</h3>
           <div id="catalogContainer" class="catalog"></div>
-        </section>
-      </div>
-
-      <div id="view-profile" class="view-container">
-        <section class="panel">
-          <h2>Profile</h2>
-          <form class="form-grid" onsubmit="handleProfileUpdate(event)">
-            <label class="form-row">
-              Email
-              <input type="text" id="profEmail" readonly />
-            </label>
-            <label class="form-row">
-              NIK
-              <input type="text" id="profNik" readonly />
-            </label>
-            <label class="form-row">
-              Birth date
-              <input type="date" id="profBirth" required />
-            </label>
-            <label class="form-row">
-              New password (optional)
-              <input type="password" id="profPassword" />
-            </label>
-            <button class="primary" type="submit">Save profile</button>
-          </form>
         </section>
       </div>
 
@@ -421,7 +396,7 @@
 
         if (appState.user) {
           wrapper.innerHTML = `
-            <button onclick="switchView('profile')">${appState.user.email} (${appState.user.role || "user"})</button>
+            <button onclick="window.location.href='user-profile.html'">${appState.user.email} (${appState.user.role || "user"})</button>
             <button onclick="logout()">Logout</button>
           `;
         } else {
@@ -476,39 +451,6 @@
         }
 
         renderCatalog();
-      }
-
-      function fillProfileForm() {
-        const user = appState.user;
-        if (!user) {
-          return;
-        }
-
-        document.getElementById("profEmail").value = user.email || "";
-        document.getElementById("profNik").value = user.nik || "";
-        document.getElementById("profBirth").value =
-          user.birth_date || user.birth || "";
-      }
-
-      function handleProfileUpdate(event) {
-        event.preventDefault();
-
-        if (!appState.user) {
-          alert("Please login first.");
-          return;
-        }
-
-        const birth = document.getElementById("profBirth").value;
-        const newPassword = document.getElementById("profPassword").value;
-
-        appState.user.birth_date = birth;
-        if (newPassword.trim()) {
-          appState.user.password = newPassword;
-        }
-
-        localStorage.setItem("tixqueue-user", JSON.stringify(appState.user));
-        document.getElementById("profPassword").value = "";
-        alert("Profile updated.");
       }
 
       let queueInterval = null;
@@ -801,7 +743,6 @@
         }
 
         renderAuthControls();
-        fillProfileForm();
         loadHomepageData();
         refreshAuthSession().finally(() => {
           loadTransactions();
