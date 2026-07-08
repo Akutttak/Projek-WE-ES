@@ -4,6 +4,7 @@ const { connectDB } = require("./config/config");
 const models = require("./models/associations");
 const syncModels = require("./models/sync");
 const { users, admin, transactions } = require("./routes");
+const events = require("./routes/events");
 const ticketWorker = require("./workers/ticketWorker");
 
 const app = express();
@@ -119,6 +120,7 @@ app.get("/", (req, res) => {
 // Register routes SEBELUM server listen
 app.use("", users);
 app.use("", transactions);
+app.use("", events);
 if (admin) {
   app.use("", admin);
 }
