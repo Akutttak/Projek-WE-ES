@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TixQueue Admin</title>
+    <style>
+      :root {
+        --bg: #f5f7fa;
+        --surface: #ffffff;
+        --line: #d7dee8;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --brand: #0f766e;
+        --brand-soft: #ecfdf5;
+        --danger: #b91c1c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .container {
+        width: min(980px, 94vw);
+        margin: 0 auto;
+        padding-bottom: 2rem;
+      }
+
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .topbar-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 0;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        margin: 0;
+        font-size: 1.15rem;
+        cursor: pointer;
+      }
+
+      .nav {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      button,
+      .link-btn {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+
+      button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #ffffff;
+      }
+
+      main {
+        padding: 1.2rem 0 2.4rem;
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+      }
+
+      .badge {
+        background: var(--brand-soft);
+        color: var(--brand);
+        border: 1px solid #b7e4d9;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        padding: 0.15rem 0.5rem;
+        width: fit-content;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .form-row {
+        display: grid;
+        gap: 0.3rem;
+      }
+
+      .form-row input,
+      .form-row select,
+      .form-row textarea {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.55rem 0.7rem;
+        background: #fff;
+      }
+
+      .grid-columns {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .grid-2 {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 0.65rem 0.75rem;
+        text-align: left;
+      }
+
+      th {
+        background: #f8fafc;
+      }
+
+      .status {
+        margin-top: 0.5rem;
+        color: var(--muted);
+      }
+
+      .danger {
+        color: var(--danger);
+      }
+
+      .actions button {
+        margin-right: 0.4rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container topbar-row">
+        <div>
+          <h1 class="brand" onclick="goHome()">TixQueue Admin</h1>
+          <p class="muted">Manage events and ticket types from the backend.</p>
+        </div>
+        <div class="nav">
+          <button onclick="goHome()">Home</button>
+          <button onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="panel" id="adminAlertPanel" style="display: none">
+        <div class="panel-header">
+          <h2>Access denied</h2>
+        </div>
+        <p class="muted">
+          This page is only available to the seeded admin account.
+        </p>
+      </section>
+
+      <section class="panel" id="adminContent" style="display: none">
+        <div class="panel-header">
+          <div>
+            <p class="badge">Admin</p>
+            <h2>Dashboard</h2>
+            <p class="muted">Create and manage events and ticket types.</p>
+          </div>
+          <div>
+            <span id="adminEmailDisplay" class="muted"></span>
+          </div>
+        </div>
+
+        <div class="grid-columns grid-2">
+          <div class="panel">
+            <h3>Create Event</h3>
+            <form id="eventForm" class="form-grid">
+              <label class="form-row">
+                Title
+                <input id="eventTitle" type="text" required />
+              </label>
+              <label class="form-row">
+                Description
+                <textarea id="eventDescription" rows="3"></textarea>
+              </label>
+              <label class="form-row">
+                Location
+                <input id="eventLocation" type="text" required />
+              </label>
+              <label class="form-row">
+                Event Date
+                <input id="eventDate" type="datetime-local" required />
+              </label>
+              <label class="form-row">
+                Age Restriction
+                <input id="eventAge" type="number" min="0" value="0" />
+              </label>
+              <label class="form-row">
+                Banner Image
+                <input id="eventBanner" type="file" accept="image/*" />
+              </label>
+              <button class="primary" type="submit">Create Event</button>
+              <div id="eventStatus" class="status"></div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h3>Create Ticket Type</h3>
+            <form id="ticketTypeForm" class="form-grid">
+              <label class="form-row">
+                Event ID
+                <input id="ticketEventId" type="number" min="1" required />
+              </label>
+              <label class="form-row">
+                Category Name
+                <input id="ticketCategory" type="text" required />
+              </label>
+              <label class="form-row">
+                Price
+                <input
+                  id="ticketPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </label>
+              <label class="form-row">
+                Quota
+                <input id="ticketQuota" type="number" min="1" required />
+              </label>
+              <label class="form-row">
+                Sold Out
+                <select id="ticketSoldOut">
+                  <option value="false" selected>No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </label>
+              <button class="primary" type="submit">Create Ticket Type</button>
+              <div id="ticketStatus" class="status"></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Events</h3>
+            <button class="primary" onclick="loadAdminEvents()">Refresh</button>
+          </div>
+          <div id="eventsTableContainer"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Ticket Types</h3>
+            <button class="primary" onclick="loadTicketTypes()">Refresh</button>
+          </div>
+          <div id="ticketTypesTableContainer"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const API_BASE = "http://localhost:3010/api";
+      const ADMIN_EMAIL = "seed.admin@tixqueue.local";
+
+      function goHome() {
+        window.location.href = "./index.html";
+      }
+
+      function getStoredAuth() {
+        const token = localStorage.getItem("tixqueue-token");
+        const user = JSON.parse(
+          localStorage.getItem("tixqueue-user") || "null",
+        );
+        return { token, user };
+      }
+
+      function showStatus(id, text, isError = false) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        el.className = isError ? "status danger" : "status";
+      }
+
+      async function checkAdminAccess() {
+        const auth = getStoredAuth();
+        const isAdmin =
+          auth.user &&
+          String(auth.user.email || "").toLowerCase() === ADMIN_EMAIL;
+        if (!auth.token || !isAdmin) {
+          document.getElementById("adminContent").style.display = "none";
+          document.getElementById("adminAlertPanel").style.display = "block";
+          return false;
+        }
+
+        document.getElementById("adminContent").style.display = "block";
+        document.getElementById("adminAlertPanel").style.display = "none";
+        document.getElementById("adminEmailDisplay").textContent =
+          auth.user.email;
+        return true;
+      }
+
+      async function authorizedFetch(url, options = {}) {
+        const auth = getStoredAuth();
+        const headers = options.headers || {};
+        if (auth.token) {
+          headers.Authorization = `Bearer ${auth.token}`;
+        }
+        return fetch(url, { credentials: "include", ...options, headers });
+      }
+
+      async function loadAdminEvents() {
+        const container = document.getElementById("eventsTableContainer");
+        container.innerHTML = "<p class='muted'>Loading events...</p>";
+
+        try {
+          const res = await authorizedFetch(`${API_BASE}/admin/events`);
+          const data = await res.json();
+          if (!res.ok)
+            throw new Error(data.message || "Unable to load events.");
+
+          if (!Array.isArray(data.events) || !data.events.length) {
+            container.innerHTML = "<p class='muted'>No events found.</p>";
+            return;
+          }
+
+          container.innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Location</th>
+                  <th>Date</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.events
+                  .map(
+                    (event) => `
+                    <tr>
+                      <td>${event.event_id || "-"}</td>
+                      <td>${event.title || "-"}</td>
+                      <td>${event.location || "-"}</td>
+                      <td>${event.event_date || "-"}</td>
+                      <td>${event.age_restriction ?? 0}</td>
+                      <td class="actions">
+                        <button onclick="deleteEvent(${event.event_id})">Delete</button>
+                      </td>
+                    </tr>
+                  `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `;
+        } catch (err) {
+          container.innerHTML = `<p class='danger'>${err.message}</p>`;
+        }
+      }
+
+      async function loadTicketTypes() {
+        const container = document.getElementById("ticketTypesTableContainer");
+        container.innerHTML = "<p class='muted'>Loading ticket types...</p>";
+
+        try {
+          const res = await authorizedFetch(`${API_BASE}/admin/ticket-types`);
+          const data = await res.json();
+          if (!res.ok)
+            throw new Error(data.message || "Unable to load ticket types.");
+
+          if (!Array.isArray(data.ticket_types) || !data.ticket_types.length) {
+            container.innerHTML = "<p class='muted'>No ticket types found.</p>";
+            return;
+          }
+
+          container.innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Event ID</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Quota</th>
+                  <th>Sold Out</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.ticket_types
+                  .map(
+                    (ticket) => `
+                    <tr>
+                      <td>${ticket.ticket_type_id || "-"}</td>
+                      <td>${ticket.event_id || "-"}</td>
+                      <td>${ticket.category_name || "-"}</td>
+                      <td>${ticket.price ?? 0}</td>
+                      <td>${ticket.quota ?? 0}</td>
+                      <td>${ticket.sold_out ? "Yes" : "No"}</td>
+                      <td class="actions">
+                        <button onclick="deleteTicketType(${ticket.ticket_type_id})">Delete</button>
+                      </td>
+                    </tr>
+                  `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `;
+        } catch (err) {
+          container.innerHTML = `<p class='danger'>${err.message}</p>`;
+        }
+      }
+
+      document
+        .getElementById("eventForm")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+          showStatus("eventStatus", "Creating event...");
+
+          const formData = new FormData();
+          formData.append(
+            "title",
+            document.getElementById("eventTitle").value.trim(),
+          );
+          formData.append(
+            "description",
+            document.getElementById("eventDescription").value.trim(),
+          );
+          formData.append(
+            "location",
+            document.getElementById("eventLocation").value.trim(),
+          );
+          formData.append(
+            "event_date",
+            document.getElementById("eventDate").value,
+          );
+          formData.append(
+            "age_restriction",
+            document.getElementById("eventAge").value,
+          );
+          const banner = document.getElementById("eventBanner").files[0];
+          if (banner) {
+            formData.append("banner", banner);
+          }
+
+          try {
+            const res = await authorizedFetch(`${API_BASE}/admin/events`, {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+            if (!res.ok)
+              throw new Error(data.message || "Unable to create event.");
+            showStatus("eventStatus", "Event created successfully.");
+            document.getElementById("eventForm").reset();
+            loadAdminEvents();
+          } catch (err) {
+            showStatus("eventStatus", err.message, true);
+          }
+        });
+
+      document
+        .getElementById("ticketTypeForm")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+          showStatus("ticketStatus", "Creating ticket type...");
+
+          try {
+            const res = await authorizedFetch(
+              `${API_BASE}/admin/ticket-types`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  event_id: Number(
+                    document.getElementById("ticketEventId").value,
+                  ),
+                  category_name: document
+                    .getElementById("ticketCategory")
+                    .value.trim(),
+                  price: Number(document.getElementById("ticketPrice").value),
+                  quota: Number(document.getElementById("ticketQuota").value),
+                  sold_out:
+                    document.getElementById("ticketSoldOut").value === "true",
+                }),
+              },
+            );
+            const data = await res.json();
+            if (!res.ok)
+              throw new Error(data.message || "Unable to create ticket type.");
+            showStatus("ticketStatus", "Ticket type created successfully.");
+            document.getElementById("ticketTypeForm").reset();
+            loadTicketTypes();
+          } catch (err) {
+            showStatus("ticketStatus", err.message, true);
+          }
+        });
+
+      async function deleteEvent(id) {
+        if (!confirm("Delete this event?")) return;
+        try {
+          const res = await authorizedFetch(`${API_BASE}/admin/events/${id}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+          if (!res.ok)
+            throw new Error(data.message || "Unable to delete event.");
+          loadAdminEvents();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+
+      async function deleteTicketType(id) {
+        if (!confirm("Delete this ticket type?")) return;
+        try {
+          const res = await authorizedFetch(
+            `${API_BASE}/admin/ticket-types/${id}`,
+            {
+              method: "DELETE",
+            },
+          );
+          const data = await res.json();
+          if (!res.ok)
+            throw new Error(data.message || "Unable to delete ticket type.");
+          loadTicketTypes();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+
+      async function logout() {
+        const token = localStorage.getItem("tixqueue-token");
+        try {
+          await fetch(`${API_BASE}/user/logout`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          });
+        } catch (_error) {
+          // ignore
+        }
+        localStorage.removeItem("tixqueue-token");
+        localStorage.removeItem("tixqueue-user");
+        localStorage.removeItem("tixqueue-authenticated");
+        window.location.href = "./login.html";
+      }
+
+      async function initializeAdminPage() {
+        const allowed = await checkAdminAccess();
+        if (!allowed) return;
+        loadAdminEvents();
+        loadTicketTypes();
+      }
+
+      initializeAdminPage();
+    </script>
+  </body>
+</html>

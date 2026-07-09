@@ -104,6 +104,16 @@ async function createTransaction(req, res) {
       });
     }
 
+    const adminEmail = (
+      process.env.SEED_USER_EMAIL || "seed.admin@tixqueue.local"
+    ).toLowerCase();
+    const userEmail = String(currentUser.email || "").toLowerCase();
+    if (userEmail === adminEmail) {
+      return res
+        .status(403)
+        .json({ message: "Admin accounts are not allowed to buy tickets." });
+    }
+
     // Validasi items tidak kosong
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "Items tidak boleh kosong." });

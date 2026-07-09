@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "JasonLowkeyGay";
+const ADMIN_EMAIL = (
+  process.env.SEED_USER_EMAIL || "seed.admin@tixqueue.local"
+).toLowerCase();
 
 function adminAuth(req, res, next) {
   const authHeader = req.headers.authorization || "";
@@ -12,7 +15,8 @@ function adminAuth(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (!decoded || decoded.role !== "admin") {
+    const email = String(decoded?.email || "").toLowerCase();
+    if (!decoded || email !== ADMIN_EMAIL) {
       return res.status(403).json({ message: "Admin access required." });
     }
     req.user = decoded;
