@@ -757,6 +757,48 @@
         `;
       }
 
+      function placeholderImageByCategory(category = "event") {
+        const value = String(category || "event").toLowerCase();
+        if (value.includes("concert") || value.includes("festival")) {
+          return "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=900&q=80";
+        }
+        if (value.includes("sports")) {
+          return "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=900&q=80";
+        }
+        if (value.includes("expo") || value.includes("conference")) {
+          return "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=900&q=80";
+        }
+        return "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80";
+      }
+
+      async function loadPredictHQCatalog(limit = 18) {
+        const response = await fetch(
+          `${API_BASE}/events/search?country=id&active=true&limit=${limit}`,
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to load PredictHQ events");
+        }
+
+        const data = await response.json();
+        const results = Array.isArray(data.results) ? data.results : [];
+
+        return results.map((eventItem) => {
+          const category = eventItem.category || "event";
+          const place =
+            eventItem.location && eventItem.location.length >= 2
+              ? `${eventItem.location[1]}, ${eventItem.location[0]}`
+              : eventItem.country || "Indonesia";
+
+          return {
+            genre: eventItem.title || "Untitled Event",
+            alt: `${category} - ${place}`,
+            image: placeholderImageByCategory(category),
+            stock: eventItem.phq_attendance || 100,
+          };
+        });
+      }
+
       async function loadHomepageData() {
         const title = document.getElementById("heroTitle");
         const tag = document.getElementById("heroTag");
@@ -777,9 +819,17 @@
           searchInput.placeholder =
             data.hero?.searchPlaceholder || "Search events";
 
-          appState.catalog = Array.isArray(data.popular?.cards)
+          const fallbackCards = Array.isArray(data.popular?.cards)
             ? data.popular.cards
             : [];
+
+          try {
+            const liveEvents = await loadPredictHQCatalog(18);
+            appState.catalog = [...liveEvents, ...fallbackCards];
+          } catch (_eventsError) {
+            appState.catalog = [...fallbackCards];
+          }
+
           appState.filteredCatalog = [...appState.catalog];
           renderCatalog();
         } catch (error) {
