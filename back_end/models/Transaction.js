@@ -26,6 +26,18 @@ const Transaction = sequelize.define(
       type: DataTypes.ENUM("in_queue", "pending", "success", "failed"),
       defaultValue: "in_queue",
     },
+    payment_status: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    payment_token: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    payment_url: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

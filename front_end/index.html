@@ -658,13 +658,33 @@
             clearInterval(queueInterval);
             progressEl.style.width = "100%";
             document.getElementById("realQStatus").innerText =
-              "Giliran Anda telah tiba! Mengalihkan ke transaksi...";
+              "Giliran Anda telah tiba! Mengalihkan ke pembayaran...";
             document.getElementById("queueEta").innerText =
-              "Silakan lanjutkan ke halaman transaksi atau pembayaran.";
-            setTimeout(() => {
-              alert("Giliran Anda tiba! Transaksi Anda sedang diproses.");
-              loadTransactions();
-              switchView("transactions");
+              "Silakan lanjutkan ke pembayaran Midtrans.";
+            setTimeout(async () => {
+              try {
+                const token = localStorage.getItem("tixqueue-token");
+                const payRes = await fetch(`${API_BASE}/transactions/${transactionId}/pay`, {
+                  method: "POST",
+                  credentials: "include",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: token ? `Bearer ${token}` : "",
+                  },
+                });
+                const payData = await payRes.json();
+                if (payData.redirect_url) {
+                  window.location.href = payData.redirect_url;
+                } else {
+                  alert(payData.message || "Tidak bisa memulai pembayaran.");
+                  loadTransactions();
+                  switchView("transactions");
+                }
+              } catch (error) {
+                alert("Gagal memulai pembayaran Midtrans.");
+                loadTransactions();
+                switchView("transactions");
+              }
             }, 500);
           } else if (data.status === "failed") {
             clearInterval(queueInterval);

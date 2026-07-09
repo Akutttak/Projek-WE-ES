@@ -28,6 +28,15 @@ router.post(
   validateBody(transactionSchema),
   controller.createTransaction,
 );
+router.post(
+  "/api/transactions/:id/pay",
+  verifyJWT,
+  controller.initiateMidtransPayment,
+);
+router.post(
+  "/api/transactions/webhook/midtrans",
+  controller.handleMidtransNotification,
+);
 router.get("/api/transactions", verifyJWT, controller.listTransactions);
 router.get("/api/transactions/queue/:id", controller.checkQueueStatus);
 router.get("/api/transactions/:id", verifyJWT, controller.detailTransaction);

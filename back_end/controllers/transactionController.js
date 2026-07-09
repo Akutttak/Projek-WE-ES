@@ -1,14 +1,52 @@
+const crypto = require("crypto");
 const { sequelize } = require("../config/config");
 const { ticketQueue } = require("../config/queue");
+const { snap, isMidtransConfigured } = require("../config/midtrans");
 const {
   TicketType,
   Transaction,
   TransactionItem,
+  User,
 } = require("../models/associations");
-const axios = require("axios");
 
 function canAccessTransaction(req, transaction) {
   return req.user.role === "admin" || transaction.user_id === req.user.user_id;
+}
+
+function buildMidtransPayload(transaction, user) {
+  const grossAmount = Math.max(1, Math.round(Number(transaction.total_amount || 0)));
+  const enabledPayments = ["gopay", "qris", "shopeepay", "bank_transfer"];
+
+  return {
+    transaction_details: {
+      order_id: `tixqueue-${transaction.transaction_id}`,
+      gross_amount: grossAmount,
+    },
+    customer_details: {
+      first_name: user?.full_name || "TixQueue Customer",
+      email: user?.email || "customer@example.com",
+    },
+    item_details: (transaction.items || []).map((item) => ({
+      id: String(item.ticket_type_id || item.ticket_type?.ticket_type_id || 1),
+      price: Math.max(1, Math.round(Number(item.subtotal || item.ticket_type?.price || 0))),
+      quantity: Number(item.quantity || 1),
+      name: item.ticket_type?.category_name || "Ticket",
+    })),
+    enabled_payments: enabledPayments,
+  };
+}
+
+function buildMidtransSignature(orderId, statusCode, grossAmount, serverKey) {
+  return crypto
+    .createHash("sha512")
+    .update(`${orderId}${statusCode}${grossAmount}${serverKey}`)
+    .digest("hex");
+}
+
+function mapMidtransStatus(status) {
+  if (["settlement", "capture"].includes(status)) return "success";
+  if (["pending"].includes(status)) return "pending";
+  return "failed";
 }
 
 // async function createTransaction(req, res) {
@@ -187,6 +225,134 @@ async function createTransaction(req, res) {
   }
 }
 
+async function initiateMidtransPayment(req, res) {
+  try {
+    const transaction = await Transaction.findByPk(req.params.id, {
+      include: [
+        {
+          model: TransactionItem,
+          as: "items",
+          include: [{ model: TicketType, as: "ticket_type" }],
+        },
+      ],
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found." });
+    }
+
+    if (!canAccessTransaction(req, transaction)) {
+      return res.status(403).json({ message: "Access forbidden." });
+    }
+
+    if (transaction.status === "in_queue") {
+      return res.status(409).json({
+        message: "Transaksi Anda masih diproses di antrean. Tunggu sebentar lagi.",
+      });
+    }
+
+    if (transaction.status === "success") {
+      return res.status(400).json({ message: "Transaksi sudah dibayar." });
+    }
+
+    if (transaction.payment_token && transaction.payment_url) {
+      return res.status(200).json({
+        message: "Payment already initialized.",
+        token: transaction.payment_token,
+        redirect_url: transaction.payment_url,
+        transaction,
+      });
+    }
+
+    if (!isMidtransConfigured()) {
+      return res.status(503).json({
+        message: "Midtrans belum dikonfigurasi.",
+        hint: "Set MIDTRANS_SERVER_KEY dan MIDTRANS_CLIENT_KEY di file .env.",
+      });
+    }
+
+    const user = await User.findByPk(transaction.user_id);
+    if (!user) {
+      return res.status(404).json({ message: "User tidak ditemukan." });
+    }
+
+    const payload = buildMidtransPayload(transaction, user);
+    const payment = await snap.createTransaction(payload);
+
+    await transaction.update({
+      status: "pending",
+      payment_token: payment.token,
+      payment_url: payment.redirect_url,
+      payment_status: "pending",
+    });
+
+    return res.status(200).json({
+      message: "Payment initiated.",
+      token: payment.token,
+      redirect_url: payment.redirect_url,
+      transaction,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Initiate Midtrans payment failed.",
+      details: err.message,
+    });
+  }
+}
+
+async function handleMidtransNotification(req, res) {
+  try {
+    const notification = req.body || {};
+    const serverKey = process.env.MIDTRANS_SERVER_KEY || "";
+
+    if (serverKey && notification.signature_key) {
+      const expectedSignature = buildMidtransSignature(
+        notification.order_id,
+        notification.status_code,
+        notification.gross_amount,
+        serverKey,
+      );
+
+      if (expectedSignature !== notification.signature_key) {
+        return res.status(403).json({ message: "Invalid Midtrans signature." });
+      }
+    }
+
+    const transactionId = String(notification.order_id || "")
+      .replace(/^tixqueue-/, "")
+      .trim();
+
+    if (!transactionId) {
+      return res.status(400).json({ message: "Order ID tidak valid." });
+    }
+
+    const transaction = await Transaction.findByPk(transactionId);
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found." });
+    }
+
+    const nextStatus = mapMidtransStatus(
+      notification.transaction_status || notification.status || "pending",
+    );
+
+    await transaction.update({
+      status: nextStatus,
+      payment_status: notification.transaction_status || notification.status || "pending",
+    });
+
+    return res.status(200).json({
+      message: "Midtrans notification processed.",
+      transaction_id: transaction.transaction_id,
+      status: nextStatus,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Handle Midtrans notification failed.",
+      details: err.message,
+    });
+  }
+}
+
 async function listTransactions(req, res) {
   try {
     const where =
@@ -312,4 +478,6 @@ module.exports = {
   updateTransactionStatus,
   deleteTransaction,
   checkQueueStatus,
+  initiateMidtransPayment,
+  handleMidtransNotification,
 };
