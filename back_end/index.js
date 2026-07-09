@@ -6,6 +6,7 @@ const syncModels = require("./models/sync");
 const { users, admin, transactions } = require("./routes");
 const events = require("./routes/events");
 const ticketWorker = require("./workers/ticketWorker");
+const { default: axios } = require("axios");
 
 const app = express();
 const PORT = process.env.PORT || 3010;
@@ -124,6 +125,8 @@ app.use("", events);
 if (admin) {
   app.use("", admin);
 }
+
+
 
 async function startServer() {
   try {

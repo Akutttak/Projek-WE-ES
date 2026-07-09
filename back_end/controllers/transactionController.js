@@ -315,6 +315,55 @@ async function checkQueueStatus(req, res) {
   }
 }
 
+async function getMidtrans(req, res) {
+  const transactionId = req.params.id;
+  const transaction = await Transaction.findByPk(transactionId);
+  if (!transaction) {
+    return res.status(404).json({ message: "Transaction not found." });
+  }
+  const options = {
+    method: "POST",
+    url: "https://app.sandbox.midtrans.com/snap/v1/transactions",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      authorization: "Basic TWlkLXNlcnZlci1mMlZvRFhkai1FR1BsemtGY1NqNGl2X3A6",
+    },
+    data: {
+      transaction_details: { order_id: transactionId, gross_amount: transaction.total_amount },
+      credit_card: { secure: true },
+    },
+  };
+
+  try {
+    const response = await axios.request(options);
+    res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to get Midtrans transaction", details: error.message });
+  } 
+
+}
+
+async function getMidtransStatus(req, res)
+{
+  const options = {
+    method: "GET",
+    url: `https://api.sandbox.midtrans.com/v2/${req.params.id}/status`,
+    headers: {
+      accept: "application/json",
+      authorization: "Basic TWlkLXNlcnZlci1mMlZvRFhkai1FR1BsemtGY1NqNGl2X3A6",
+    },
+  };
+try {
+    const response = await axios.request(options);
+    res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to get Midtrans transaction", details: error.message });
+  } 
+};
+
 module.exports = {
   createTransaction,
   listTransactions,
@@ -322,4 +371,6 @@ module.exports = {
   updateTransactionStatus,
   deleteTransaction,
   checkQueueStatus,
+  getMidtrans,
+  getMidtransStatus,
 };

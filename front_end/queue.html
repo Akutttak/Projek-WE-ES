@@ -140,11 +140,32 @@
                 // KONDISI B: Giliran tiba (Worker sukses memproses)
                 else if (result.status === "ready") {
                     clearInterval(queueInterval); // Setop hit ke backend
-                    statusTextEl.innerText = "Mengarahkan ke halaman pembayaran...";
+                    statusTextEl.innerText = "Mengambil tautan pembayaran Midtrans...";
                     alert("Selamat! Giliran Anda tiba. Silakan selesaikan pembayaran.");
-                    
-                    // Alihkan user ke halaman invoice / pembayaran Anda
-                    window.location.href = `/payment.html?id=${transactionId}`;
+
+                    try {
+                        const token = localStorage.getItem('tixqueue-token');
+                        let midtransResponse = await fetch(`http://localhost:3010/api/transactions/midtrans/${transactionId}`, {
+                            method: 'post',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        console.log('Midtrans response status:', midtransResponse.status);
+                        const midtransData = await midtransResponse.json();
+                        const redirectUrl = midtransData?.redirect_url || midtransData?.redirectUrl || midtransData?.payment_url || midtransData?.url;
+
+                        if (redirectUrl) {
+                            localStorage.setItem('tixqueue-payment', JSON.stringify({ redirect_url: redirectUrl, payment_url: redirectUrl }));
+                            let paymentWindow;
+                            paymentWindow = window.open(redirectUrl, '_blank');
+                        } else {
+                            alert('Gagal mengambil tautan pembayaran Midtrans.');
+                        }
+                    } catch (error) {
+                        console.error('Midtrans payment error:', error);
+                        alert('Gagal membuka halaman pembayaran Midtrans.');
+                    }
                 } 
                 // KONDISI C: Gagal war (Kuota habis)
                 else if (result.status === "failed") {

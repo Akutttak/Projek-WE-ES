@@ -661,13 +661,86 @@
             clearInterval(queueInterval);
             progressEl.style.width = "100%";
             document.getElementById("realQStatus").innerText =
-              "Giliran Anda telah tiba! Mengalihkan ke transaksi...";
+              "Giliran Anda telah tiba! Mengambil tautan pembayaran...";
             document.getElementById("queueEta").innerText =
-              "Silakan lanjutkan ke halaman transaksi atau pembayaran.";
-            setTimeout(() => {
-              alert("Giliran Anda tiba! Transaksi Anda sedang diproses.");
-              loadTransactions();
-              switchView("transactions");
+              "Sedang membuka halaman pembayaran Midtrans...";
+            setTimeout(async () => {
+              try {
+                const token = localStorage.getItem("tixqueue-token");
+                const initResponse = await fetch(
+                  `${API_BASE}/transactions/midtrans/${transactionId}`,
+                  {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                      Authorization: token ? `Bearer ${token}` : "",
+                      "Content-Type": "application/json",
+                    },
+                  },
+                );
+                const initData = await initResponse.json();
+                const redirectUrl =
+                  initData?.redirect_url ||
+                  initData?.redirectUrl ||
+                  initData?.payment_url ||
+                  initData?.url;
+
+                if (redirectUrl) {
+                  localStorage.setItem(
+                    "tixqueue-payment",
+                    JSON.stringify({ redirect_url: redirectUrl, payment_url: redirectUrl }),
+                  );
+
+                  const statusResponse = await fetch(
+                    `${API_BASE}/transactions/midtrans/${transactionId}`,
+                    {
+                      method: "GET",
+                      credentials: "include",
+                      headers: {
+                        Authorization: token ? `Bearer ${token}` : "",
+                      },
+                    },
+                  );
+                  const statusData = await statusResponse.json();
+
+                  console.log("Midtrans status:", statusData);
+
+                  const paymentWindow = window.open(redirectUrl, "_blank", "popup ");
+                  if (paymentWindow) {
+                    const checkPaymentAfterClose = () => {
+                      if (paymentWindow.closed) {
+                        fetch(`${API_BASE}/transactions/midtrans/${transactionId}`, {
+                          method: "GET",
+                          credentials: "include",
+                          headers: {
+                            Authorization: token ? `Bearer ${token}` : "",
+                          },
+                        })
+                          .then((res) => res.json())
+                          .then((statusData) => {
+                            console.log("Midtrans status after close:", statusData);
+                            if (statusData?.transaction_status === "settlement") {
+                              alert("Pembayaran berhasil!");
+                            } else if (statusData?.transaction_status === "expire" || statusData?.transaction_status === "cancel") {
+                              alert("Pembayaran dibatalkan atau kadaluarsa.");
+                            }
+                          })
+                          .catch((error) => {
+                            console.error("Status check after close failed:", error);
+                          });
+                        return;
+                      }
+                      setTimeout(checkPaymentAfterClose, 500);
+                    };
+                    checkPaymentAfterClose();
+                  }
+                } else {
+                  alert("Gagal mengambil tautan pembayaran Midtrans.");
+                }
+              } catch (error) {
+                console.error("Midtrans payment error:", error);
+                alert("Gagal membuka halaman pembayaran Midtrans.");
+              }
             }, 500);
           } else if (data.status === "failed") {
             clearInterval(queueInterval);
