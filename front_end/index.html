@@ -462,19 +462,25 @@
           .join("");
       }
 
-      function searchCatalog(event) {
+      async function searchCatalog(event) {
         event.preventDefault();
         const keyword = (document.getElementById("searchInput").value || "")
-          .toLowerCase()
           .trim();
 
         if (!keyword) {
           appState.filteredCatalog = [...appState.catalog];
-        } else {
+          renderCatalog();
+          return;
+        }
+
+        try {
+          appState.filteredCatalog = await loadPredictHQCatalog(18, keyword);
+        } catch (_error) {
+          const localKeyword = keyword.toLowerCase();
           appState.filteredCatalog = appState.catalog.filter((item) => {
             return `${item.genre || ""} ${item.alt || ""}`
               .toLowerCase()
-              .includes(keyword);
+              .includes(localKeyword);
           });
         }
 
@@ -771,9 +777,19 @@
         return "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80";
       }
 
-      async function loadPredictHQCatalog(limit = 18) {
+      async function loadPredictHQCatalog(limit = 18, keyword = "") {
+        const params = new URLSearchParams({
+          country: "id",
+          active: "true",
+          limit: String(limit),
+        });
+
+        if (keyword) {
+          params.set("q", keyword);
+        }
+
         const response = await fetch(
-          `${API_BASE}/events/search?country=id&active=true&limit=${limit}`,
+          `${API_BASE}/events/search?${params.toString()}`,
         );
 
         if (!response.ok) {
