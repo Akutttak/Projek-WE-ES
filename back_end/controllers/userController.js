@@ -206,9 +206,79 @@ async function logout(_req, res) {
     .json({ message: "Logout successful. Cookies removed." });
 }
 
+async function updateProfile(req, res) {
+  const userId = req.user?.user_id;
+  const { full_name, password } = req.body;
+
+  try {
+    if (!userId) {
+      throw new CustomError("Unauthorized.", 401);
+    }
+
+    if (!full_name || !String(full_name).trim()) {
+      throw new CustomError("full_name is required.", 400);
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new CustomError("User not found.", 404);
+    }
+
+    const updates = {
+      full_name: String(full_name).trim(),
+    };
+
+    if (password && String(password).trim()) {
+      if (String(password).length < 6) {
+        throw new CustomError("Password must be at least 6 characters.", 400);
+      }
+      updates.password = await bcrypt.hash(String(password), 10);
+    }
+
+    await user.update(updates);
+
+    return sendAuthResponse(res, user, 200);
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    return res
+      .status(statusCode)
+      .json({ message: error.message || "Profile update failed." });
+  }
+}
+
+async function deleteAccount(req, res) {
+  const userId = req.user?.user_id;
+
+  try {
+    if (!userId) {
+      throw new CustomError("Unauthorized.", 401);
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new CustomError("User not found.", 404);
+    }
+
+    await user.destroy();
+
+    res.clearCookie("refreshToken");
+    res.clearCookie("token");
+    res.clearCookie("accessToken");
+
+    return res.status(200).json({ message: "Account deleted successfully." });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    return res
+      .status(statusCode)
+      .json({ message: error.message || "Account deletion failed." });
+  }
+}
+
 module.exports = {
   register,
   login,
   refresh,
   logout,
+  updateProfile,
+  deleteAccount,
 };

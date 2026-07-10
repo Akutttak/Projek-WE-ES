@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TixQueue User Profile</title>
+    <style>
+      :root {
+        --bg: #f5f7fa;
+        --surface: #ffffff;
+        --line: #d7dee8;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --brand: #0f766e;
+        --danger: #b91c1c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .container {
+        width: min(780px, 92vw);
+        margin: 0 auto;
+      }
+
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+      }
+
+      .topbar-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.75rem 0;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .link-btn,
+      button {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #ffffff;
+      }
+
+      button.danger {
+        background: var(--danger);
+        border-color: var(--danger);
+        color: #ffffff;
+      }
+
+      main {
+        padding: 1.4rem 0 2rem;
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 0.7rem;
+        margin-top: 0.8rem;
+      }
+
+      .form-row {
+        display: grid;
+        gap: 0.3rem;
+      }
+
+      .form-row input {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.55rem 0.6rem;
+      }
+
+      .form-row input[readonly] {
+        background: #f3f4f6;
+        color: #4b5563;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+      }
+
+      .status {
+        margin-top: 0.7rem;
+        min-height: 1.2rem;
+        color: var(--muted);
+        font-size: 0.93rem;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container topbar-row">
+        <a class="brand" href="./index.html">TixQueue</a>
+        <div>
+          <a class="link-btn" href="./index.html">Back to Home</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="panel">
+        <h2 style="margin: 0">User Profile</h2>
+        <p class="muted" style="margin: 0.45rem 0 0">
+          You can update your full name and password only.
+        </p>
+
+        <form id="updateForm" class="form-grid">
+          <label class="form-row">
+            NIK (cannot be changed)
+            <input id="nikInput" type="text" readonly />
+          </label>
+
+          <label class="form-row">
+            Email (cannot be changed)
+            <input id="emailInput" type="email" readonly />
+          </label>
+
+          <label class="form-row">
+            Full name
+            <input id="fullNameInput" type="text" required />
+          </label>
+
+          <label class="form-row">
+            New password
+            <input id="newPasswordInput" type="password" autocomplete="new-password" />
+          </label>
+
+          <label class="form-row">
+            Confirm new password
+            <input
+              id="confirmPasswordInput"
+              type="password"
+              autocomplete="new-password"
+            />
+          </label>
+
+          <div class="actions">
+            <button class="primary" type="submit">Update info</button>
+          </div>
+        </form>
+
+        <div id="updateStatus" class="status"></div>
+      </section>
+
+      <section class="panel">
+        <h3 style="margin: 0">Delete Account</h3>
+        <p class="muted" style="margin: 0.45rem 0 0">
+          This action is permanent and cannot be undone.
+        </p>
+
+        <div class="actions" style="margin-top: 0.9rem">
+          <button id="deleteBtn" class="danger" type="button">Delete account</button>
+        </div>
+
+        <div id="deleteStatus" class="status"></div>
+      </section>
+    </main>
+
+    <script>
+      const API_BASE = "http://localhost:3010/api";
+
+      function setStatus(targetId, text, isError = false) {
+        const el = document.getElementById(targetId);
+        el.textContent = text;
+        el.className = isError ? "status error" : "status";
+      }
+
+      function getToken() {
+        return localStorage.getItem("tixqueue-token") || "";
+      }
+
+      function getSavedUser() {
+        try {
+          return JSON.parse(localStorage.getItem("tixqueue-user") || "null");
+        } catch (_err) {
+          return null;
+        }
+      }
+
+      function fillUserData() {
+        const user = getSavedUser();
+        if (!user) {
+          setStatus("updateStatus", "No user session found. Please login first.", true);
+          return;
+        }
+
+        document.getElementById("nikInput").value = user.nik || "";
+        document.getElementById("emailInput").value = user.email || "";
+        document.getElementById("fullNameInput").value = user.full_name || "";
+      }
+
+      async function callApi(path, method, body) {
+        const token = getToken();
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE}${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+          credentials: "include",
+        });
+
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (_err) {
+          data = {};
+        }
+
+        if (!response.ok) {
+          throw new Error(data.message || `Request failed (${response.status}).`);
+        }
+
+        return data;
+      }
+
+      document.getElementById("updateForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const full_name = document.getElementById("fullNameInput").value.trim();
+        const new_password = document.getElementById("newPasswordInput").value;
+        const confirm_password = document.getElementById("confirmPasswordInput").value;
+
+        if (!full_name) {
+          setStatus("updateStatus", "Full name is required.", true);
+          return;
+        }
+
+        if (new_password || confirm_password) {
+          if (new_password !== confirm_password) {
+            setStatus("updateStatus", "Password confirmation does not match.", true);
+            return;
+          }
+
+          if (new_password.length < 6) {
+            setStatus("updateStatus", "New password must be at least 6 characters.", true);
+            return;
+          }
+        }
+
+        setStatus("updateStatus", "Updating user info...");
+
+        try {
+          const payload = { full_name };
+          if (new_password) {
+            payload.password = new_password;
+          }
+
+          const data = await callApi("/user/profile", "PUT", payload);
+
+          const currentUser = getSavedUser() || {};
+          const nextUser = {
+            ...currentUser,
+            ...(data.user || {}),
+            full_name,
+          };
+          localStorage.setItem("tixqueue-user", JSON.stringify(nextUser));
+
+          if (data.accessToken || data.token) {
+            localStorage.setItem("tixqueue-token", data.accessToken || data.token);
+          }
+
+          document.getElementById("newPasswordInput").value = "";
+          document.getElementById("confirmPasswordInput").value = "";
+          setStatus("updateStatus", "Profile updated successfully.");
+        } catch (error) {
+          setStatus("updateStatus", error.message || "Unable to update profile.", true);
+        }
+      });
+
+      document.getElementById("deleteBtn").addEventListener("click", async () => {
+        const ok = window.confirm("Are you sure you want to delete your account permanently?");
+        if (!ok) {
+          return;
+        }
+
+        setStatus("deleteStatus", "Deleting account...");
+
+        try {
+          await callApi("/user/account", "DELETE");
+
+          localStorage.removeItem("tixqueue-user");
+          localStorage.removeItem("tixqueue-token");
+          localStorage.removeItem("tixqueue-authenticated");
+
+          setStatus("deleteStatus", "Account deleted. Redirecting to login...");
+          setTimeout(() => {
+            window.location.href = "./login.html";
+          }, 550);
+        } catch (error) {
+          setStatus("deleteStatus", error.message || "Unable to delete account.", true);
+        }
+      });
+
+      fillUserData();
+    </script>
+  </body>
+</html>
