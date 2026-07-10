@@ -412,7 +412,7 @@
           target.classList.add("active-view");
         }
       }
-
+      const ADMIN_EMAIL = "seed.admin@tixqueue.local"; // Pindah ke env
       function renderAuthControls() {
         const wrapper = document.getElementById("navAuthControls");
         if (!wrapper) {
@@ -421,7 +421,7 @@
 
         if (appState.user) {
           const isAdmin =
-            String(appState.user.role || "").toLowerCase() === "admin";
+            String(appState.user.email || "").toLowerCase() === ADMIN_EMAIL;
           wrapper.innerHTML = `
             ${isAdmin ? "<button onclick=\"window.location.href='admin.html'\">Admin</button>" : ""}
             <button onclick="switchView('profile')">${appState.user.email} (${appState.user.role || "user"})</button>

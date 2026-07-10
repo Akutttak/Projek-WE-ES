@@ -1,0 +1,669 @@
+{
+  "info": {
+    "_postman_id": "tixqueue-collection-2026",
+    "name": "TixQueue Studio API",
+    "description": "Complete API documentation for TixQueue Studio - Premium Ticketing and Queueing System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nik\": \"1234567890123456\",\n  \"full_name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"birth_date\": \"1990-01-15\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "register"]
+            },
+            "description": "Register a new user account. Returns access and refresh tokens upon successful registration."
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "login"]
+            },
+            "description": "Login with email and password. Returns JWT access token and user information."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "refresh"]
+            },
+            "description": "Refresh the access token using the refresh token stored in cookies."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "logout"]
+            },
+            "description": "Logout the current user and invalidate the session."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin - Events Management",
+      "item": [
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Summer Concert 2026",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "An amazing summer concert featuring top artists from around the world.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Jakarta Convention Center",
+                  "type": "text"
+                },
+                {
+                  "key": "event_date",
+                  "value": "2026-08-15T19:00:00Z",
+                  "type": "text"
+                },
+                {
+                  "key": "age_restriction",
+                  "value": "18",
+                  "type": "text"
+                },
+                {
+                  "key": "banner",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/events",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "events"]
+            },
+            "description": "Create a new event. Admin only. Supports banner image upload."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/events?sort=desc&title=&location=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "events"],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "desc",
+                  "description": "Sort order: 'asc' or 'desc' (default: desc)"
+                },
+                {
+                  "key": "title",
+                  "value": "",
+                  "description": "Filter by event title (optional)"
+                },
+                {
+                  "key": "location",
+                  "value": "",
+                  "description": "Filter by location (optional)"
+                }
+              ]
+            },
+            "description": "Fetch all events with optional filtering and sorting. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Summer Concert 2026 - Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Updated description for the summer concert event.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Jakarta Convention Center",
+                  "type": "text"
+                },
+                {
+                  "key": "event_date",
+                  "value": "2026-08-15T19:00:00Z",
+                  "type": "text"
+                },
+                {
+                  "key": "age_restriction",
+                  "value": "18",
+                  "type": "text"
+                },
+                {
+                  "key": "banner",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/events/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "events", "1"]
+            },
+            "description": "Update an existing event. Admin only. Event ID in URL path."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/events/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "events", "1"]
+            },
+            "description": "Delete an event. Admin only. Event ID in URL path."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin - Ticket Types Management",
+      "item": [
+        {
+          "name": "Create Ticket Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": 1,\n  \"category_name\": \"VIP Seat\",\n  \"price\": 500000,\n  \"quota\": 100,\n  \"sold_out\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/ticket-types",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "ticket-types"]
+            },
+            "description": "Create a new ticket type for an event. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Ticket Types",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/ticket-types?category_name=&sort=asc&sold_out=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "ticket-types"],
+              "query": [
+                {
+                  "key": "category_name",
+                  "value": "",
+                  "description": "Filter by category name (optional)"
+                },
+                {
+                  "key": "sort",
+                  "value": "asc",
+                  "description": "Sort by price: 'asc' or 'desc' (default: asc)"
+                },
+                {
+                  "key": "sold_out",
+                  "value": "",
+                  "description": "Filter by sold out status: true/false (optional)"
+                }
+              ]
+            },
+            "description": "Fetch all ticket types with optional filtering and sorting. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Ticket Type",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_name\": \"VIP Seat - Premium\",\n  \"price\": 600000,\n  \"quota\": 80,\n  \"sold_out\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/ticket-types/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "ticket-types", "1"]
+            },
+            "description": "Update an existing ticket type. Admin only. Ticket Type ID in URL path."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Ticket Type",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/ticket-types/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "ticket-types", "1"]
+            },
+            "description": "Delete a ticket type. Admin only. Ticket Type ID in URL path."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Events Search",
+      "item": [
+        {
+          "name": "Search Events (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/events/search?country=ID&limit=10&category=concerts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "events", "search"],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "ID",
+                  "description": "Country code (e.g., ID for Indonesia)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of results to return"
+                },
+                {
+                  "key": "category",
+                  "value": "concerts",
+                  "description": "Event category"
+                }
+              ]
+            },
+            "description": "Search for events from PredictHQ API using GET request. Requires PREDICTHQ_API_KEY to be set in .env"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Events (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"ID\",\n  \"limit\": 10,\n  \"category\": \"concerts\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "events", "search"]
+            },
+            "description": "Search for events from PredictHQ API using POST request. Requires PREDICTHQ_API_KEY to be set in .env"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Create Transaction (Queue)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_method\": \"gopay\",\n  \"items\": [\n    {\n      \"ticket_type_id\": 1,\n      \"quantity\": 2\n    },\n    {\n      \"ticket_type_id\": 2,\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/transactions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions"]
+            },
+            "description": "Create a new transaction and enter the queue. User must be authenticated. Returns transaction_id and queue position.\n\nPayment methods: gopay, ovo, qris\nQuantity range: 1-10 per item"
+          },
+          "response": []
+        },
+        {
+          "name": "List Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/transactions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions"]
+            },
+            "description": "Get list of transactions. Admin sees all transactions, regular users see only their own transactions."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Queue Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/transactions/queue/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions", "queue", "1"]
+            },
+            "description": "Check the queue status of a transaction. Returns queue position, estimated wait time, and status (in_queue, ready, or failed). No authentication required for public queue checking."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions", "1"]
+            },
+            "description": "Get detailed information about a specific transaction, including all ticket items. User can only see their own transactions, admins can see all."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Transaction Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"success\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/transactions/1/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions", "1", "status"]
+            },
+            "description": "Update transaction status. Admin only. Valid statuses: pending, success, failed"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Transaction",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions", "1"]
+            },
+            "description": "Delete a transaction. Admin only."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment - Midtrans",
+      "item": [
+        {
+          "name": "Get Midtrans Payment Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/api/transactions/midtrans/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions", "midtrans", "1"]
+            },
+            "description": "Get Midtrans payment token/redirect URL for a transaction. Returns redirect URL to Midtrans payment page."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Midtrans Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/transactions/midtrans/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transactions", "midtrans", "1"]
+            },
+            "description": "Check the payment status from Midtrans. If payment is settled, transaction status is automatically updated to 'success'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Get Homepage Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/homepage",
+              "host": ["{{base_url}}"],
+              "path": ["api", "homepage"]
+            },
+            "description": "Get homepage data including branding, toolbar, steps, hero section, and popular events. No authentication required."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3010",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
