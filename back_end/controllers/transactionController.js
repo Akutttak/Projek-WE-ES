@@ -357,6 +357,11 @@ async function getMidtransStatus(req, res)
   };
 try {
     const response = await axios.request(options);
+    if(response.data.transaction_status === "settlement") {
+      const transaction = await Transaction.findByPk(req.params.id);
+      transaction.status = "success";
+      await transaction.save();
+    } // Update transaction ke Success jika pembayaran berhasil
     res.json(response.data);
   } catch (error) {
     console.error(error);

@@ -44,7 +44,7 @@ router.delete(
   allowRoles("admin"),
   controller.deleteTransaction,
 );
-router.post("/api/transactions/midtrans/:id", controller.getMidtrans);
-router.get("/api/transactions/midtrans/:id", controller.getMidtransStatus);
+router.post("/api/transactions/midtrans/:id", verifyJWT, controller.getMidtrans);
+router.get("/api/transactions/midtrans/:id", verifyJWT, controller.getMidtransStatus);
 
 module.exports = router;
