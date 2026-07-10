@@ -19,6 +19,25 @@ function buildSearchParams(query) {
   return params;
 }
 
+function normalizePredictHQParams(rawParams) {
+  const params = { ...rawParams };
+
+  if (!params.active) {
+    params.active = "true";
+  }
+
+  if (!params.limit) {
+    params.limit = "18";
+  }
+
+  // Avoid very broad queries that frequently timeout.
+  if (!params.country) {
+    params.country = "us";
+  }
+
+  return params;
+}
+
 function isPlaceholderApiKey(apiKey) {
   return (
     !apiKey || apiKey === "your_api_key_here" || apiKey.startsWith("your_")
@@ -36,14 +55,14 @@ router.get("/api/events/search", async (req, res) => {
       });
     }
 
-    const params = buildSearchParams(req.query);
+    const params = normalizePredictHQParams(buildSearchParams(req.query));
     const response = await axios.get("https://api.predicthq.com/v1/events/", {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         Accept: "application/json",
       },
       params,
-      timeout: 15000,
+      timeout: 20000,
     });
 
     return res.status(200).json(response.data);
@@ -69,14 +88,14 @@ router.post("/api/events/search", async (req, res) => {
       });
     }
 
-    const params = buildSearchParams(req.body);
+    const params = normalizePredictHQParams(buildSearchParams(req.body));
     const response = await axios.get("https://api.predicthq.com/v1/events/", {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         Accept: "application/json",
       },
       params,
-      timeout: 15000,
+      timeout: 20000,
     });
 
     return res.status(200).json(response.data);
