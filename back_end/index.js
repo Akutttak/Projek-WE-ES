@@ -47,7 +47,40 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.get("/api/homepage", (req, res) => {
+app.get("/api/homepage", async (req, res) => {
+  const { Event, TicketType } = require("./models/associations");
+
+  let dbCards = [];
+  try {
+    const events = await Event.findAll({
+      include: [{ model: TicketType, as: "ticket_types" }],
+      order: [["event_date", "ASC"]],
+    });
+
+    dbCards = events.map((ev) => {
+      const ticketTypes = ev.ticket_types || [];
+      const totalQuota = ticketTypes.reduce(
+        (sum, tt) => sum + (tt.quota || 0),
+        0,
+      );
+      const firstTicketTypeId = ticketTypes.length > 0 ? ticketTypes[0].ticket_type_id : null;
+      return {
+        genre: ev.title,
+        alt: ev.location,
+        image: ev.banner_url
+          ? `http://localhost:${process.env.PORT || 3010}${ev.banner_url}`
+          : "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80",
+        stock: totalQuota,
+        event_id: ev.event_id,
+        ticket_type_id: firstTicketTypeId,
+        event_date: ev.event_date,
+        location: ev.location,
+      };
+    });
+  } catch (_err) {
+    // fallback to hardcoded if DB unavailable
+  }
+
   res.json({
     brand: {
       title: "TixQueue Studio",
@@ -76,36 +109,7 @@ app.get("/api/homepage", (req, res) => {
     popular: {
       title: "Penjualan Tiket Terpopuler",
       filterLabel: "Kategori Filter",
-      cards: [
-        {
-          genre: "Pop",
-          image:
-            "https://images.unsplash.com/photo-1571266028243-d220c9f29998?auto=format&fit=crop&w=900&q=80",
-          alt: "Pop concert crowd",
-          stock: 150,
-        },
-        {
-          genre: "R&B",
-          image:
-            "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80",
-          alt: "R and B stage show",
-          stock: 80,
-        },
-        {
-          genre: "Rock",
-          image:
-            "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?auto=format&fit=crop&w=900&q=80",
-          alt: "Rock DJ performance",
-          stock: 200,
-        },
-        {
-          genre: "Indie",
-          image:
-            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80",
-          alt: "Indie music festival",
-          stock: 320,
-        },
-      ],
+      cards: dbCards,
     },
     footer: {
       text: "TixQueue Studio - Virtual Queue Engine for High-Demand Ticket Sales",
